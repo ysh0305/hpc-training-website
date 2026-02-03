@@ -1,0 +1,9 @@
+[submodule "docs_external/basic_skills"]
+	path = docs_external/basic_skills
+	url = https://github.com/sdsc-hpc-training-org/basic_skills.git
+[submodule "docs_external/galyleo"]
+	path = docs_external/galyleo
+	url = https://github.com/mkandes/galyleo.git
+[submodule "docs_external/expanse-101"]
+	path = docs_external/expanse-101
+	url = https://github.com/sdsc-hpc-training-org/expanse-101.git
