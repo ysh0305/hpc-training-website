@@ -6,7 +6,7 @@ const config: Config = {
   title: "hpc-training-docs",
   favicon: "img/favicon.ico",
 
-  url: "https://YOUR_DOMAIN.com",
+  url: "https://hpc-training.sdsc.edu",
   baseUrl: "/hpc-training-docs/",
 
   onBrokenLinks: "warn",
@@ -33,8 +33,6 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
-
-  /** 🔍 Local Search Plugin */
   themes: [
     [
       require.resolve("@cmfcmf/docusaurus-search-local"),
