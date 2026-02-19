@@ -1,0 +1,32 @@
+name: Sync documentation submodules
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * *"   # daily; adjust as needed
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Sync docs submodules by org topic
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/sync-doc-submodules.mjs
+
+      - name: Push changes
+        run: git push

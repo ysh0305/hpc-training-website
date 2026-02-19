@@ -1,0 +1,25 @@
+{
+  "org": "sdsc-hpc-training-org",
+  "topic": "documentation",
+  "pathPrefix": "docs_external",
+  "defaultBranch": "main",
+  "autoRemove": false,
+
+  "exclude": [
+    "sdsc-hpc-training-org.github.io"
+  ],
+
+  "branchOverrides": {
+    "basic_skills": "hpc-training-doc"
+  },
+
+  "manualRepos": [
+    {
+      "name": "galyleo",
+      "url": "https://github.com/mkandes/galyleo.git",
+      "branch": "master"
+    }
+  ]
+}
+
+
