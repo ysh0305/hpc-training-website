@@ -18,7 +18,3 @@
 	path = docs_external/hpc-security
 	url = https://github.com/sdsc-hpc-training-org/hpc-security.git
 	branch = master
-[submodule "docs_external/comet-101"]
-	path = docs_external/comet-101
-	url = https://github.com/sdsc-hpc-training-org/comet-101.git
-	branch = master
