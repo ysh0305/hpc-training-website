@@ -13,12 +13,16 @@ function ensureDir(p) {
 }
 
 function addFrontmatterTitle(text) {
-  // Only operate on files that already have frontmatter
-  const m = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/m);
+  // Only operate on files that begin with real frontmatter.
+  // Do not treat in-body markdown separators (---) as frontmatter.
+  const m = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!m) return text;
 
   const fm = m[1];
   const body = m[2];
+
+  // Require at least one frontmatter-like key to reduce false positives.
+  if (!/^[A-Za-z0-9_-]+\s*:/m.test(fm)) return text;
 
   // If title already exists, do nothing
   if (/^title\s*:/m.test(fm)) return text;
@@ -33,8 +37,8 @@ function addFrontmatterTitle(text) {
   const link = title.match(/^\[([^\]]+)\]\([^)]+\)$/);
   if (link) title = link[1].trim();
 
-  // Insert title into frontmatter (keep other keys)
-  const newFm = fm.trimEnd() + `\ntitle: ${title}\n`;
+  // Insert title into frontmatter (quoted for YAML safety)
+  const newFm = `${fm.trimEnd()}\ntitle: ${JSON.stringify(title)}\n`;
   return `---\n${newFm}---\n${body}`;
 }
 
