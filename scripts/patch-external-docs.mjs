@@ -4,12 +4,166 @@
 
 import fs from "fs";
 import path from "path";
+import { execSync } from "child_process";
 
 const SRC = path.resolve("docs_external"); // submodule path (read-only)
 const OUT_ROOT = path.resolve("docs");     // stable output root (do NOT delete)
+const GITMODULES_PATH = path.resolve(".gitmodules");
+const LAST_SYNCED = new Date().toISOString().replace("T", " ").replace("Z", " UTC");
 
 function ensureDir(p) {
   fs.mkdirSync(p, { recursive: true });
+}
+
+function normalizeRepoUrl(url) {
+  if (!url) return "";
+  if (url.startsWith("git@github.com:")) {
+    return `https://github.com/${url.slice("git@github.com:".length).replace(/\.git$/, "")}`;
+  }
+  return url.replace(/\.git$/, "");
+}
+
+function parseGitmodules() {
+  const byPath = new Map();
+  if (!fs.existsSync(GITMODULES_PATH)) return byPath;
+
+  const lines = fs.readFileSync(GITMODULES_PATH, "utf8").split(/\r?\n/);
+  let current = null;
+
+  for (const line of lines) {
+    const section = line.match(/^\[submodule\s+"([^"]+)"\]$/);
+    if (section) {
+      if (current?.path) byPath.set(current.path, current);
+      current = { section: section[1], path: "", url: "", branch: "" };
+      continue;
+    }
+    if (!current) continue;
+
+    const pathMatch = line.match(/^\s*path\s*=\s*(.+)\s*$/);
+    if (pathMatch) {
+      current.path = pathMatch[1].trim().replace(/\\/g, "/");
+      continue;
+    }
+    const urlMatch = line.match(/^\s*url\s*=\s*(.+)\s*$/);
+    if (urlMatch) {
+      current.url = urlMatch[1].trim();
+      continue;
+    }
+    const branchMatch = line.match(/^\s*branch\s*=\s*(.+)\s*$/);
+    if (branchMatch) {
+      current.branch = branchMatch[1].trim();
+      continue;
+    }
+  }
+
+  if (current?.path) byPath.set(current.path, current);
+  return byPath;
+}
+
+const SUBMODULE_META = parseGitmodules();
+
+function getRepoMetaForSourcePath(sourcePath) {
+  if (!sourcePath) return null;
+  const rel = path.relative(process.cwd(), sourcePath).replace(/\\/g, "/");
+  if (!rel.startsWith("docs_external/")) return null;
+
+  const parts = rel.split("/");
+  if (parts.length < 2) return null;
+  const repoPath = `${parts[0]}/${parts[1]}`;
+  const meta = SUBMODULE_META.get(repoPath);
+  if (!meta) return null;
+
+  return {
+    repoPath,
+    repoName: parts[1],
+    repoUrl: normalizeRepoUrl(meta.url),
+    branch: meta.branch || "main",
+  };
+}
+
+function injectSourceBanner(text, sourcePath) {
+  const meta = getRepoMetaForSourcePath(sourcePath);
+  if (!meta) return text;
+
+  const banner =
+    `<!-- source-sync-meta -->\n` +
+    `> Source repo: [${meta.repoName}](${meta.repoUrl}) | Branch: \`${meta.branch}\` | Last synced: ${LAST_SYNCED}\n\n`;
+
+  const fm = text.match(/^---\n[\s\S]*?\n---\n/);
+  if (fm) {
+    return `${fm[0]}${banner}${text.slice(fm[0].length)}`;
+  }
+  return `${banner}${text}`;
+}
+
+function shOrEmpty(cmd) {
+  try {
+    return execSync(cmd, { encoding: "utf8", stdio: "pipe" }).trim();
+  } catch {
+    return "";
+  }
+}
+
+function generateWeeklyChangesPage() {
+  const outPath = path.join(OUT_ROOT, "what-changed-this-week.md");
+  const entries = Array.from(SUBMODULE_META.values())
+    .filter((m) => m.path.startsWith("docs_external/"))
+    .sort((a, b) => a.path.localeCompare(b.path));
+
+  const lines = [
+    "---",
+    "title: \"What Changed This Week\"",
+    "sidebar_position: 2",
+    "---",
+    "",
+    "# What Changed This Week",
+    "",
+    `Last synced: ${LAST_SYNCED}`,
+    "",
+    "Recent updates from documentation source repositories (last 7 days).",
+    "",
+  ];
+
+  for (const meta of entries) {
+    const repoName = meta.path.replace(/^docs_external\//, "");
+    const repoUrl = normalizeRepoUrl(meta.url);
+    const branch = meta.branch || "main";
+    const absRepoPath = path.resolve(meta.path);
+
+    lines.push(`## ${repoName}`);
+    lines.push("");
+    lines.push(`- Source: [${repoUrl}](${repoUrl})`);
+    lines.push(`- Branch: \`${branch}\``);
+
+    const head = shOrEmpty(`git -C ${JSON.stringify(absRepoPath)} rev-parse --short HEAD`);
+    if (head) lines.push(`- Current commit: \`${head}\``);
+    lines.push("");
+
+    const raw = shOrEmpty(
+      `git -C ${JSON.stringify(absRepoPath)} log --since="7 days ago" --date=short --pretty=format:%h%x09%ad%x09%s`
+    );
+
+    if (!raw) {
+      lines.push("- No commits in the last 7 days.");
+      lines.push("");
+      continue;
+    }
+
+    for (const row of raw.split("\n")) {
+      if (!row.trim()) continue;
+      const [hash, date, ...subjectParts] = row.split("\t");
+      const subject = (subjectParts.join("\t") || "").trim();
+      const commitLink = repoUrl ? `${repoUrl}/commit/${hash}` : "";
+      if (commitLink) {
+        lines.push(`- ${date}: [\`${hash}\`](${commitLink}) ${subject}`);
+      } else {
+        lines.push(`- ${date}: \`${hash}\` ${subject}`);
+      }
+    }
+    lines.push("");
+  }
+
+  fs.writeFileSync(outPath, `${lines.join("\n").trimEnd()}\n`, "utf8");
 }
 
 function addFrontmatterTitle(text) {
@@ -181,6 +335,12 @@ function patchMdx(text, sourcePath = "") {
   text = addFrontmatterTitle(text);
 
   let out = text
+    // Fix known broken filename in upstream docs.
+    .replaceAll("geting-started-exp-port-authentication.png", "expanse-portal-authentication.png")
+
+    // Empty markdown links []() are invalid/noisy for Docusaurus; keep label as plain text.
+    .replace(/\[([^\]]+)\]\(\s*\)/g, "$1")
+
     // Anchor at end of a heading line:
     // "## Title <a name="id"></a>" -> "## Title {#id}"
     .replace(/^(#{1,6}\s+.*?)\s*<a\s+name="([^"]+)"\s*>(?:\s*<\/a>)?\s*$/gim, "$1 {#$2}")
@@ -265,6 +425,9 @@ function patchMdx(text, sourcePath = "") {
     .replace(/\[\s*\[\s*Back to[^\n]*$/gim, "")
     .replace(/\[\s*Back to[^\n]*$/gim, "")
 
+    // Prevent MDX JSX parse failures on literal "<#" sequences in imported plain text.
+    .replace(/<(?=#)/g, "&lt;")
+
     // Normalize malformed encoded/quoted anchors.
     .replace(/\(#([^)#\s]*?)%22\)/gi, "(#$1)")
     .replace(/\]\(#([^)\s"]+)"\)/gi, "](#$1)")
@@ -303,6 +466,7 @@ function patchMdx(text, sourcePath = "") {
   out = out.replace(/<div\s+id=['"]([^'"]+)['"]\s*\/>/gi, '<a id="$1"></a>');
 
   out = fixFileSpecificLinks(out, sourcePath);
+  out = injectSourceBanner(out, sourcePath);
 
   return out;
 }
@@ -363,5 +527,7 @@ for (const entry of fs.readdirSync(SRC, { withFileTypes: true })) {
     }
   }
 }
+
+generateWeeklyChangesPage();
 
 console.log(`Patched external docs: ${SRC} -> ${OUT_ROOT}`);
