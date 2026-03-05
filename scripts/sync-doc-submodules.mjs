@@ -94,6 +94,15 @@ function hasSubmoduleEntry(subPath) {
   return Boolean(getGitmodulesUrl(subPath));
 }
 
+function isSubmoduleTracked(subPath) {
+  try {
+    const out = sh(`git ls-files --stage -- ${subPath}`);
+    return /^160000\s/m.test(out); // gitlink mode for submodules
+  } catch {
+    return false;
+  }
+}
+
 function isProbablySubmoduleDir(dirPath) {
   // Guard: if folder exists but isn't a tracked submodule, don't touch it.
   if (!fs.existsSync(dirPath)) return false;
@@ -107,8 +116,9 @@ function pickBranch(repoName, repoDefaultBranch, cfg) {
   return overrides[repoName] || repoDefaultBranch || cfg.defaultBranch || "main";
 }
 
-function submoduleAdd(url, dest) {
-  shInherit(`git submodule add ${url} ${dest}`);
+function submoduleAdd(url, dest, force = false) {
+  const forceFlag = force ? "--force " : "";
+  shInherit(`git submodule add ${forceFlag}${url} ${dest}`);
 }
 
 function submoduleEnsureInit(dest) {
@@ -123,12 +133,17 @@ function submoduleUpdateRemote(dest) {
 function addOrUpdateSubmodule({ name, url, default_branch }, cfg, kindLabel) {
   const dest = path.join(cfg.pathPrefix, name);
   const branch = pickBranch(name, default_branch, cfg);
+  const hasEntry = hasSubmoduleEntry(dest);
+  const tracked = isSubmoduleTracked(dest);
 
   ensureDir(cfg.pathPrefix);
 
-  if (!fs.existsSync(dest) && !hasSubmoduleEntry(dest)) {
+  if (!fs.existsSync(dest) && (!hasEntry || !tracked)) {
     console.log(`+ [${kindLabel}] Adding submodule ${name} -> ${dest} (branch=${branch})`);
-    submoduleAdd(url, dest);
+    if (hasEntry && !tracked) {
+      console.log(`! [${kindLabel}] Found stale .gitmodules entry for ${dest}; re-adding with --force`);
+    }
+    submoduleAdd(url, dest, hasEntry);
   } else {
     // If directory exists but isn't a submodule, skip for safety
     if (fs.existsSync(dest) && !isProbablySubmoduleDir(dest)) {
@@ -138,6 +153,12 @@ function addOrUpdateSubmodule({ name, url, default_branch }, cfg, kindLabel) {
       );
       return;
     }
+
+    if (!tracked && hasEntry) {
+      console.log(`! [${kindLabel}] Submodule entry exists but is not tracked: ${dest}; repairing`);
+      submoduleAdd(url, dest, true);
+    }
+
     console.log(`= [${kindLabel}] Submodule exists: ${name}`);
   }
 
