@@ -30,7 +30,7 @@ const config: Config = {
           sidebarPath: "./sidebars.ts",
         },
         blog: false,
-        pages: false,
+        pages: {},
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
         },
@@ -78,6 +78,11 @@ const config: Config = {
         {
           label: "Documentations",
           to: "/",
+          position: "right",
+        },
+        {
+          label: "Weekly Highlights",
+          to: "/weekly-highlights",
           position: "right",
         },
         {

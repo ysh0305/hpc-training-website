@@ -4,10 +4,10 @@
 
 import fs from "fs";
 import path from "path";
-import { execSync } from "child_process";
 
 const SRC = path.resolve("docs_external"); // submodule path (read-only)
 const OUT_ROOT = path.resolve("docs");     // stable output root (do NOT delete)
+const PAGES_ROOT = path.resolve("src/pages");
 const GITMODULES_PATH = path.resolve(".gitmodules");
 const LAST_SYNCED = new Date().toISOString().replace("T", " ").replace("Z", " UTC");
 
@@ -96,69 +96,89 @@ function injectSourceBanner(text, sourcePath) {
   return `${banner}${text}`;
 }
 
-function shOrEmpty(cmd) {
-  try {
-    return execSync(cmd, { encoding: "utf8", stdio: "pipe" }).trim();
-  } catch {
-    return "";
-  }
-}
-
 function generateWeeklyChangesPage() {
-  const outPath = path.join(OUT_ROOT, "what-changed-this-week.md");
+  ensureDir(PAGES_ROOT);
+  const outPath = path.join(PAGES_ROOT, "weekly-highlights.md");
   const entries = Array.from(SUBMODULE_META.values())
     .filter((m) => m.path.startsWith("docs_external/"))
     .sort((a, b) => a.path.localeCompare(b.path));
 
   const lines = [
     "---",
-    "title: \"What Changed This Week\"",
-    "sidebar_position: 2",
+    "title: \"Weekly Documentation Highlights\"",
     "---",
     "",
-    "# What Changed This Week",
+    "# Weekly Documentation Highlights",
     "",
     `Last synced: ${LAST_SYNCED}`,
     "",
-    "Recent updates from documentation source repositories (last 7 days).",
+    "Latest documentation sync overview.",
     "",
   ];
+
+  function findFirstDocFile(dir) {
+    if (!fs.existsSync(dir)) return null;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const files = [];
+    const dirs = [];
+    for (const e of entries) {
+      if (e.name.startsWith(".")) continue;
+      if (e.isDirectory()) dirs.push(e.name);
+      else files.push(e.name);
+    }
+    files.sort();
+    dirs.sort();
+
+    for (const f of files) {
+      const ext = path.extname(f).toLowerCase();
+      if (ext === ".md" || ext === ".mdx") return path.join(dir, f);
+    }
+    for (const d of dirs) {
+      const nested = findFirstDocFile(path.join(dir, d));
+      if (nested) return nested;
+    }
+    return null;
+  }
+
+  function getTutorialRoute(repoName) {
+    const repoDir = path.join(OUT_ROOT, repoName);
+    if (!fs.existsSync(repoDir)) return null;
+
+    const preferred = ["README.md", "README.mdx", "index.md", "index.mdx"];
+    for (const p of preferred) {
+      if (fs.existsSync(path.join(repoDir, p))) return `/${repoName}/`;
+    }
+
+    const firstDoc = findFirstDocFile(repoDir);
+    if (!firstDoc) return null;
+
+    const rel = path.relative(OUT_ROOT, firstDoc).replace(/\\/g, "/");
+    const noExt = rel.replace(/\.(md|mdx)$/i, "");
+    const base = path.basename(noExt).toLowerCase();
+    const repoBase = repoName.toLowerCase();
+    if (base === "readme" || base === "index") {
+      return `/${path.dirname(noExt)}/`.replace(/\/{2,}/g, "/");
+    }
+    if (base === repoBase) {
+      return `/${repoName}/`;
+    }
+    return `/${noExt}`.replace(/\/{2,}/g, "/");
+  }
 
   for (const meta of entries) {
     const repoName = meta.path.replace(/^docs_external\//, "");
     const repoUrl = normalizeRepoUrl(meta.url);
     const branch = meta.branch || "main";
-    const absRepoPath = path.resolve(meta.path);
+    const tutorialLink = getTutorialRoute(repoName);
 
-    lines.push(`## ${repoName}`);
+    lines.push(`## ${repoName.replace(/[_-]+/g, " ")}`);
     lines.push("");
-    lines.push(`- Source: [${repoUrl}](${repoUrl})`);
-    lines.push(`- Branch: \`${branch}\``);
-
-    const head = shOrEmpty(`git -C ${JSON.stringify(absRepoPath)} rev-parse --short HEAD`);
-    if (head) lines.push(`- Current commit: \`${head}\``);
+    lines.push(`Source repo: [${repoName}](${repoUrl}) | Branch: \`${branch}\` | Last synced: ${LAST_SYNCED}`);
     lines.push("");
-
-    const raw = shOrEmpty(
-      `git -C ${JSON.stringify(absRepoPath)} log --since="7 days ago" --date=short --pretty=format:%h%x09%ad%x09%s`
-    );
-
-    if (!raw) {
-      lines.push("- No commits in the last 7 days.");
-      lines.push("");
-      continue;
-    }
-
-    for (const row of raw.split("\n")) {
-      if (!row.trim()) continue;
-      const [hash, date, ...subjectParts] = row.split("\t");
-      const subject = (subjectParts.join("\t") || "").trim();
-      const commitLink = repoUrl ? `${repoUrl}/commit/${hash}` : "";
-      if (commitLink) {
-        lines.push(`- ${date}: [\`${hash}\`](${commitLink}) ${subject}`);
-      } else {
-        lines.push(`- ${date}: \`${hash}\` ${subject}`);
-      }
+    if (tutorialLink) {
+      lines.push(`- [Open tutorial](${tutorialLink})`);
+    } else {
+      lines.push("- Tutorial link not available yet.");
     }
     lines.push("");
   }
@@ -537,6 +557,10 @@ if (!fs.existsSync(SRC) || fs.readdirSync(SRC).length === 0) {
 
 // Ensure output root exists (never delete this folder)
 ensureDir(OUT_ROOT);
+ensureDir(PAGES_ROOT);
+
+// Clean up legacy docs route for weekly highlights (moved to src/pages).
+fs.rmSync(path.join(OUT_ROOT, "updates", "what-changed-this-week.md"), { force: true });
 
 // Update only the content coming from the submodule:
 // For each top-level entry in SRC, remove the corresponding entry in OUT_ROOT, then copy/patch it.
