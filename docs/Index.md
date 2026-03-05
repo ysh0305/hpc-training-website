@@ -59,6 +59,12 @@ Use the navigation sidebar to explore available tutorials. If you are new to HPC
 If you are new to HPC or the Linux command line, begin with the **HPC Basic Skills / Getting Started** section when available in the sidebar.
 :::
 
+## Documentation Links
+
+- [Documentation Home](/)
+- [Expanse Notebooks](https://hpc-training.sdsc.edu/Expanse-Notebooks/)
+- [SDSC interactive Video](https://education.sdsc.edu/training/interactive/)
+
 ---
 
 _Last updated: January 28, 2026_

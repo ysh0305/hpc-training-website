@@ -72,6 +72,21 @@ const config: Config = {
           position: "left",
         },
         {
+          label: "Documentations",
+          to: "/",
+          position: "right",
+        },
+        {
+          label: "Expanse Notebooks",
+          href: "https://hpc-training.sdsc.edu/Expanse-Notebooks/",
+          position: "right",
+        },
+        {
+          label: "SDSC interactive Video",
+          href: "https://education.sdsc.edu/training/interactive/",
+          position: "right",
+        },
+        {
           type: "search",
           position: "right",
         },

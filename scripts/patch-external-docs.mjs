@@ -38,7 +38,92 @@ function addFrontmatterTitle(text) {
   return `---\n${newFm}---\n${body}`;
 }
 
-function patchMdx(text) {
+const HTML_TAGS = new Set([
+  "a",
+  "b",
+  "blockquote",
+  "br",
+  "code",
+  "div",
+  "em",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "hr",
+  "i",
+  "img",
+  "li",
+  "ol",
+  "p",
+  "pre",
+  "strong",
+  "table",
+  "tbody",
+  "td",
+  "th",
+  "thead",
+  "tr",
+  "u",
+  "ul",
+]);
+
+function getAttr(attrs, name) {
+  const re = new RegExp(`${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, "i");
+  const m = attrs.match(re);
+  if (!m) return "";
+  return (m[1] ?? m[2] ?? "").trim();
+}
+
+function stripTags(text) {
+  return text.replace(/<\/?[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function toBlockquote(text) {
+  return text
+    .trim()
+    .split("\n")
+    .map((line) => `> ${line}`.trimEnd())
+    .join("\n");
+}
+
+function isRemoteUrl(src) {
+  return /^(https?:)?\/\//i.test(src) || src.startsWith("data:");
+}
+
+function resolveImageSrc(src, fileDir) {
+  if (!src || isRemoteUrl(src) || src.startsWith("/")) return src;
+
+  const normalized = src.replace(/\\/g, "/");
+  const candidates = [
+    normalized,
+    normalized.startsWith("./") ? normalized.slice(2) : `./${normalized}`,
+    normalized.startsWith("./") ? normalized : `../${normalized}`,
+    `../docs/${normalized}`,
+    `../expanse-101/docs/${normalized}`,
+    `../../docs/${normalized}`,
+    `../../expanse-101/docs/${normalized}`,
+  ];
+
+  for (const rel of candidates) {
+    const abs = path.resolve(fileDir, rel);
+    if (fs.existsSync(abs)) {
+      return rel.replace(/\\/g, "/");
+    }
+  }
+
+  return normalized;
+}
+
+function hasResolvableLocalImage(src, fileDir) {
+  if (!src) return false;
+  if (isRemoteUrl(src) || src.startsWith("/")) return true;
+  return fs.existsSync(path.resolve(fileDir, src));
+}
+
+function patchMdx(text, fileDir = process.cwd()) {
   // add title first (uses original H1 before any later normalization)
   text = addFrontmatterTitle(text);
 
@@ -58,10 +143,44 @@ function patchMdx(text) {
     // Remove any remaining <a ...> or </a>
     .replace(/<\/?a\b[^>]*>/gi, "")
 
+    // Headings: <h1>..</h1> -> # ..
+    .replace(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi, (_, level, content) => {
+      const hashes = "#".repeat(Number(level));
+      const clean = stripTags(content);
+      return `\n${hashes} ${clean}\n`;
+    })
+
+    // Images: <img src="..." alt="..."> -> ![...](...)
+    .replace(/<img\b([^>]*)\/?>/gi, (match, attrs) => {
+      const originalSrc = getAttr(attrs, "src");
+      const src = resolveImageSrc(originalSrc, fileDir);
+      if (!hasResolvableLocalImage(src, fileDir)) return match;
+      if (!src) return "";
+      const alt = getAttr(attrs, "alt");
+      const title = getAttr(attrs, "title");
+      const titlePart = title ? ` "${title}"` : "";
+      return `![${alt}](${src}${titlePart})`;
+    })
+
+    // Structural wrappers
+    .replace(/<p\b[^>]*>([\s\S]*?)<\/p>/gi, "\n$1\n")
+    .replace(/<div\b[^>]*>([\s\S]*?)<\/div>/gi, "\n$1\n")
+    .replace(/<blockquote\b[^>]*>([\s\S]*?)<\/blockquote>/gi, (_, body) => `\n${toBlockquote(stripTags(body))}\n`)
+
+    // Lists
+    .replace(/<li\b[^>]*>([\s\S]*?)<\/li>/gi, (_, body) => `\n- ${stripTags(body)}`)
+    .replace(/<\/?(ul|ol)\b[^>]*>/gi, "")
+
+    // Fenced code blocks
+    .replace(/<pre\b[^>]*>\s*(?:<code\b[^>]*>)?([\s\S]*?)(?:<\/code>)?\s*<\/pre>/gi, (_, body) => `\n\`\`\`\n${body.trim()}\n\`\`\`\n`)
+
     // MDX-safe tags
     .replaceAll("<hr>", "---\n")
     .replaceAll("<hr/>", "<hr />")
+    .replaceAll("<hr />", "---\n")
     .replaceAll("<br>", "<br />")
+    .replaceAll("<br/>", "  \n")
+    .replaceAll("<br />", "  \n")
 
     // Email autolinks: <consult@sdsc.edu> -> [consult@sdsc.edu](mailto:consult@sdsc.edu)
     .replace(/<([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})>/gi, "[$1](mailto:$1)")
@@ -89,7 +208,21 @@ function patchMdx(text) {
 
     // Convert placeholder syntax to inline code:
     // "<< module name >>" OR "<module name>" -> `module name`
-    .replace(/<<\s*([^<>]+?)\s*>>|<([a-z][^<>]*?)>/gi, (_, p1, p2) => `\`${(p1 || p2).trim()}\``)
+    // Run this late so most HTML tags have already been converted first.
+    .replace(/<<\s*([^<>]+?)\s*>>|<([a-z][^<>]*?)>/gi, (match, p1, p2) => {
+      const candidate = (p1 || p2 || "").trim();
+      if (!candidate) return match;
+
+      // Always convert <<...>> placeholders.
+      if (p1) return `\`${candidate}\``;
+
+      // Skip anything that still looks like HTML.
+      if (candidate.startsWith("/") || /[="'/]/.test(candidate)) return match;
+      const tagName = candidate.split(/\s+/)[0].toLowerCase();
+      if (HTML_TAGS.has(tagName)) return match;
+
+      return `\`${candidate}\``;
+    })
     ;
 }
 
@@ -109,7 +242,7 @@ function walkAndCopy(srcDir, outDir) {
     const ext = path.extname(entry.name).toLowerCase();
     if (ext === ".md" || ext === ".mdx") {
       const raw = fs.readFileSync(srcPath, "utf8");
-      fs.writeFileSync(outPath, patchMdx(raw), "utf8");
+      fs.writeFileSync(outPath, patchMdx(raw, path.dirname(srcPath)), "utf8");
     } else {
       fs.copyFileSync(srcPath, outPath);
     }
@@ -143,7 +276,7 @@ for (const entry of fs.readdirSync(SRC, { withFileTypes: true })) {
     const ext = path.extname(entry.name).toLowerCase();
     if (ext === ".md" || ext === ".mdx") {
       const raw = fs.readFileSync(srcPath, "utf8");
-      fs.writeFileSync(outPath, patchMdx(raw), "utf8");
+      fs.writeFileSync(outPath, patchMdx(raw, path.dirname(srcPath)), "utf8");
     } else {
       fs.copyFileSync(srcPath, outPath);
     }
