@@ -1,0 +1,135 @@
+{
+  "generatedAt": "2026-03-27T18:47:20.558Z",
+  "repos": [
+    {
+      "id": "basic_skills",
+      "name": "basic_skills",
+      "owner": "sdsc-hpc-training-org",
+      "fullName": "sdsc-hpc-training-org/basic_skills",
+      "url": "https://github.com/sdsc-hpc-training-org/basic_skills",
+      "branch": "hpc-training-doc",
+      "source": "org",
+      "topics": [],
+      "route": "/basic_skills/",
+      "hasDocs": true
+    },
+    {
+      "id": "expanse-101",
+      "name": "expanse-101",
+      "owner": "sdsc-hpc-training-org",
+      "fullName": "sdsc-hpc-training-org/expanse-101",
+      "url": "https://github.com/sdsc-hpc-training-org/expanse-101",
+      "branch": "docusaurus",
+      "source": "org",
+      "topics": [],
+      "route": "/expanse-101/",
+      "hasDocs": true
+    },
+    {
+      "id": "galyleo",
+      "name": "galyleo",
+      "owner": "mkandes",
+      "fullName": "mkandes/galyleo",
+      "url": "https://github.com/mkandes/galyleo",
+      "branch": "master",
+      "source": "manual",
+      "topics": [],
+      "route": "/galyleo/",
+      "hasDocs": true
+    },
+    {
+      "id": "hpc-security",
+      "name": "hpc-security",
+      "owner": "sdsc-hpc-training-org",
+      "fullName": "sdsc-hpc-training-org/hpc-security",
+      "url": "https://github.com/sdsc-hpc-training-org/hpc-security",
+      "branch": "master",
+      "source": "org",
+      "topics": [],
+      "route": "/hpc-security/",
+      "hasDocs": true
+    },
+    {
+      "id": "sdsc-summer-institute-2021",
+      "name": "sdsc-summer-institute-2021",
+      "owner": "sdsc",
+      "fullName": "sdsc/sdsc-summer-institute-2021",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2021",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "summer-institute"
+      ],
+      "route": "/sdsc-summer-institute-2021/",
+      "hasDocs": true
+    },
+    {
+      "id": "sdsc-summer-institute-2022",
+      "name": "sdsc-summer-institute-2022",
+      "owner": "sdsc",
+      "fullName": "sdsc/sdsc-summer-institute-2022",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2022",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "summer-institute"
+      ],
+      "route": "/sdsc-summer-institute-2022/",
+      "hasDocs": true
+    },
+    {
+      "id": "sdsc-summer-institute-2023",
+      "name": "sdsc-summer-institute-2023",
+      "owner": "sdsc",
+      "fullName": "sdsc/sdsc-summer-institute-2023",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2023",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "summer-institute"
+      ],
+      "route": "/sdsc-summer-institute-2023/",
+      "hasDocs": true
+    },
+    {
+      "id": "sdsc-summer-institute-2024",
+      "name": "sdsc-summer-institute-2024",
+      "owner": "sdsc",
+      "fullName": "sdsc/sdsc-summer-institute-2024",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2024",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "summer-institute"
+      ],
+      "route": "/sdsc-summer-institute-2024/",
+      "hasDocs": true
+    },
+    {
+      "id": "sdsc-summer-institute-2025",
+      "name": "sdsc-summer-institute-2025",
+      "owner": "sdsc",
+      "fullName": "sdsc/sdsc-summer-institute-2025",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2025",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "summer-institute"
+      ],
+      "route": "/sdsc-summer-institute-2025/",
+      "hasDocs": true
+    },
+    {
+      "id": "tscc-101",
+      "name": "tscc-101",
+      "owner": "sdsc-hpc-training-org",
+      "fullName": "sdsc-hpc-training-org/tscc-101",
+      "url": "https://github.com/sdsc-hpc-training-org/tscc-101",
+      "branch": "main",
+      "source": "org",
+      "topics": [],
+      "route": "/tscc-101/",
+      "hasDocs": true
+    }
+  ]
+}

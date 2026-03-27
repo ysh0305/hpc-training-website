@@ -4,15 +4,41 @@
 
 import fs from "fs";
 import path from "path";
+import { execSync } from "child_process";
 
 const SRC = path.resolve("docs_external"); // submodule path (read-only)
 const OUT_ROOT = path.resolve("docs");     // stable output root (do NOT delete)
 const PAGES_ROOT = path.resolve("src/pages");
+const DATA_ROOT = path.resolve("src/data");
+const REPO_CATALOG_PATH = path.resolve("src/data/repo-catalog.json");
+const WEEKLY_HIGHLIGHTS_PATH = path.resolve("src/data/weekly-highlights.json");
+const WEEKLY_STATE_PATH = path.resolve("src/data/weekly-highlights-state.json");
+const SIDEBARS_PATH = path.resolve("sidebars.ts");
 const GITMODULES_PATH = path.resolve(".gitmodules");
+const SUBMODULES_DOCS_PATH = path.resolve("submodules.docs.json");
 const LAST_SYNCED = new Date().toISOString().replace("T", " ").replace("Z", " UTC");
+const QUARANTINED_SOURCE_FILES = new Set([
+  // Known problematic upstream files that can intermittently break MDX/doc metadata generation.
+  "docs_external/sdsc-summer-institute-2023/README.md",
+  "docs_external/sdsc-summer-institute-2023/5.1b_deep_learning_pt1/README.md",
+  "docs_external/sdsc-summer-institute-2023/4.2a_python_for_hpc/dask_slurm/README.md",
+  "docs_external/sdsc-summer-institute-2025/6.4_overview_of_PNRP/README.md",
+]);
 
 function ensureDir(p) {
   fs.mkdirSync(p, { recursive: true });
+}
+
+function removePathSafe(p) {
+  try {
+    fs.rmSync(p, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  } catch (err) {
+    try {
+      execSync(`rm -rf ${JSON.stringify(p)}`, { stdio: "pipe" });
+    } catch {
+      throw err;
+    }
+  }
 }
 
 function normalizeRepoUrl(url) {
@@ -21,6 +47,40 @@ function normalizeRepoUrl(url) {
     return `https://github.com/${url.slice("git@github.com:".length).replace(/\.git$/, "")}`;
   }
   return url.replace(/\.git$/, "");
+}
+
+function isQuarantinedSourceFile(sourcePath) {
+  const rel = path.relative(process.cwd(), sourcePath).replace(/\\/g, "/");
+  return QUARANTINED_SOURCE_FILES.has(rel);
+}
+
+function writeQuarantinePlaceholder(outPath, sourcePath) {
+  const rel = path.relative(process.cwd(), sourcePath).replace(/\\/g, "/");
+  const title = toTitleFromFolder(path.basename(path.dirname(sourcePath)) || "Quarantined");
+  const placeholder = [
+    "---",
+    `title: ${JSON.stringify(title)}`,
+    "---",
+    "",
+    "<!-- source-sync-meta -->",
+    `> Source file quarantined from: \`${rel}\``,
+    "",
+    "This source file is temporarily quarantined by the docs patch pipeline due to known upstream formatting issues.",
+    "The rest of this repository remains available.",
+    "",
+  ].join("\n");
+  fs.writeFileSync(outPath, placeholder, "utf8");
+}
+
+function parseGitHubOwnerRepo(url) {
+  const normalized = normalizeRepoUrl(url);
+  const m = normalized.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)$/i);
+  if (!m) return { owner: "", repo: "" };
+  return { owner: m[1], repo: m[2] };
+}
+
+function sh(cmd, cwd = process.cwd()) {
+  return execSync(cmd, { encoding: "utf8", stdio: "pipe", cwd }).trim();
 }
 
 function parseGitmodules() {
@@ -81,6 +141,36 @@ function getRepoMetaForSourcePath(sourcePath) {
   };
 }
 
+function getRepoNameFromSourcePath(sourcePath = "") {
+  const rel = sourcePath.replace(/\\/g, "/");
+  const m = rel.match(/docs_external\/([^/]+)/);
+  return m ? m[1] : "";
+}
+
+function toSidebarId(repoName) {
+  return `repo_${String(repoName || "").replace(/[^A-Za-z0-9_]/g, "_")}`;
+}
+
+function setOrInsertFrontmatterField(text, key, valueLiteral) {
+  const fmMatch = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (fmMatch) {
+    const fm = fmMatch[1];
+    const body = fmMatch[2];
+    const keyRe = new RegExp(`^${key}\\s*:.*$`, "m");
+    const newFm = keyRe.test(fm)
+      ? fm.replace(keyRe, `${key}: ${valueLiteral}`)
+      : `${fm.trimEnd()}\n${key}: ${valueLiteral}\n`;
+    return `---\n${newFm}---\n${body}`;
+  }
+  return `---\n${key}: ${valueLiteral}\n---\n${text}`;
+}
+
+function applyRepoSidebar(text, sourcePath = "") {
+  const repoName = getRepoNameFromSourcePath(sourcePath);
+  if (!repoName) return text;
+  return setOrInsertFrontmatterField(text, "displayed_sidebar", JSON.stringify(toSidebarId(repoName)));
+}
+
 function injectSourceBanner(text, sourcePath) {
   const meta = getRepoMetaForSourcePath(sourcePath);
   if (!meta) return text;
@@ -96,25 +186,11 @@ function injectSourceBanner(text, sourcePath) {
   return `${banner}${text}`;
 }
 
-function generateWeeklyChangesPage() {
-  ensureDir(PAGES_ROOT);
-  const outPath = path.join(PAGES_ROOT, "weekly-highlights.md");
+function generateWeeklyHighlightsData() {
+  ensureDir(DATA_ROOT);
   const entries = Array.from(SUBMODULE_META.values())
     .filter((m) => m.path.startsWith("docs_external/"))
     .sort((a, b) => a.path.localeCompare(b.path));
-
-  const lines = [
-    "---",
-    "title: \"Weekly Documentation Highlights\"",
-    "---",
-    "",
-    "# Weekly Documentation Highlights",
-    "",
-    `Last synced: ${LAST_SYNCED}`,
-    "",
-    "Latest documentation sync overview.",
-    "",
-  ];
 
   function findFirstDocFile(dir) {
     if (!fs.existsSync(dir)) return null;
@@ -165,25 +241,204 @@ function generateWeeklyChangesPage() {
     return `/${noExt}`.replace(/\/{2,}/g, "/");
   }
 
+  function loadWeeklyState() {
+    if (!fs.existsSync(WEEKLY_STATE_PATH)) return { repos: {} };
+    try {
+      const raw = fs.readFileSync(WEEKLY_STATE_PATH, "utf8");
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : { repos: {} };
+    } catch {
+      return { repos: {} };
+    }
+  }
+
+  function getLatestCommitMeta(repoName) {
+    const repoDir = path.join(SRC, repoName);
+    if (!fs.existsSync(repoDir)) {
+      return { hash: "", shortHash: "", committedAt: "", subject: "" };
+    }
+
+    try {
+      const hash = sh("git log -1 --format=%H", repoDir);
+      const committedAt = sh("git log -1 --format=%cI", repoDir);
+      const subject = sh("git log -1 --format=%s", repoDir);
+      return {
+        hash,
+        shortHash: hash ? hash.slice(0, 7) : "",
+        committedAt,
+        subject,
+      };
+    } catch {
+      return { hash: "", shortHash: "", committedAt: "", subject: "" };
+    }
+  }
+
+  const nowIso = new Date().toISOString();
+  const previousState = loadWeeklyState();
+  const nextState = { repos: {} };
+  const repos = [];
+
   for (const meta of entries) {
     const repoName = meta.path.replace(/^docs_external\//, "");
     const repoUrl = normalizeRepoUrl(meta.url);
     const branch = meta.branch || "main";
     const tutorialLink = getTutorialRoute(repoName);
+    const commit = getLatestCommitMeta(repoName);
+    const prev = previousState?.repos?.[repoName];
+    const isNewlyAdded = !prev;
+    const isUpdated = Boolean(prev && prev.lastSeenCommit && prev.lastSeenCommit !== commit.hash);
+    const firstSeenAt = prev?.firstSeenAt || nowIso;
 
-    lines.push(`## ${repoName.replace(/[_-]+/g, " ")}`);
-    lines.push("");
-    lines.push(`Source repo: [${repoName}](${repoUrl}) | Branch: \`${branch}\` | Last synced: ${LAST_SYNCED}`);
-    lines.push("");
-    if (tutorialLink) {
-      lines.push(`- [Open tutorial](${tutorialLink})`);
-    } else {
-      lines.push("- Tutorial link not available yet.");
-    }
-    lines.push("");
+    nextState.repos[repoName] = {
+      firstSeenAt,
+      lastSeenCommit: commit.hash,
+      lastSeenAt: nowIso,
+    };
+
+    repos.push({
+      id: repoName,
+      name: repoName,
+      displayName: toTitleFromFolder(repoName),
+      repoUrl,
+      branch,
+      tutorialLink,
+      hasDocs: Boolean(tutorialLink),
+      latestCommitHash: commit.hash,
+      latestCommitShort: commit.shortHash,
+      latestCommitAt: commit.committedAt,
+      latestCommitSubject: commit.subject,
+      isNewlyAdded,
+      isUpdated,
+      firstSeenAt,
+    });
   }
 
-  fs.writeFileSync(outPath, `${lines.join("\n").trimEnd()}\n`, "utf8");
+  repos.sort((a, b) => {
+    if (a.isNewlyAdded !== b.isNewlyAdded) return a.isNewlyAdded ? -1 : 1;
+    if (a.isUpdated !== b.isUpdated) return a.isUpdated ? -1 : 1;
+    const ad = Date.parse(a.latestCommitAt || 0);
+    const bd = Date.parse(b.latestCommitAt || 0);
+    return bd - ad;
+  });
+
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    summary: {
+      total: repos.length,
+      newlyAdded: repos.filter((r) => r.isNewlyAdded).length,
+      updated: repos.filter((r) => r.isUpdated).length,
+    },
+    repos,
+  };
+
+  fs.writeFileSync(WEEKLY_HIGHLIGHTS_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  fs.writeFileSync(WEEKLY_STATE_PATH, `${JSON.stringify(nextState, null, 2)}\n`, "utf8");
+}
+
+function repoHasDocs(repoName) {
+  const repoDir = path.join(OUT_ROOT, repoName);
+  if (!fs.existsSync(repoDir)) return false;
+
+  const stack = [repoDir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const abs = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(abs);
+        continue;
+      }
+      if (/\.(md|mdx)$/i.test(entry.name)) return true;
+    }
+  }
+  return false;
+}
+
+function refreshCatalogDocAvailability() {
+  if (!fs.existsSync(REPO_CATALOG_PATH)) return;
+
+  try {
+    let manualTopicMap = {};
+    let manualRepoMap = {};
+    let defaultBranch = "main";
+    if (fs.existsSync(SUBMODULES_DOCS_PATH)) {
+      try {
+        const cfg = JSON.parse(fs.readFileSync(SUBMODULES_DOCS_PATH, "utf8"));
+        defaultBranch = String(cfg?.defaultBranch || "main").trim() || "main";
+        const manualRepos = Array.isArray(cfg?.manualRepos) ? cfg.manualRepos : [];
+        for (const r of manualRepos) {
+          const name = String(r?.name || "").trim();
+          if (!name) continue;
+          manualRepoMap[name] = r;
+          const topics = Array.from(
+            new Set(
+              [
+                ...(Array.isArray(r?.topics) ? r.topics : []),
+                ...(r?.topic ? [r.topic] : []),
+              ]
+                .map((t) => String(t).trim().toLowerCase())
+                .filter(Boolean)
+            )
+          );
+          if (topics.length > 0) {
+            manualTopicMap[name] = topics;
+          }
+        }
+      } catch (err) {
+        console.warn(`! Could not parse manual topic overrides: ${err?.message || err}`);
+      }
+    }
+
+    const raw = fs.readFileSync(REPO_CATALOG_PATH, "utf8");
+    const payload = JSON.parse(raw);
+    if (!Array.isArray(payload?.repos)) return;
+
+    payload.repos = payload.repos.map((repo) => {
+      const name = String(repo?.name || "").trim();
+      if (!name) return repo;
+      const configuredTopics = manualTopicMap[name] || [];
+      return {
+        ...repo,
+        topics: configuredTopics.length > 0 ? configuredTopics : Array.isArray(repo?.topics) ? repo.topics : [],
+        hasDocs: repoHasDocs(name),
+      };
+    });
+
+    const existingNames = new Set(
+      payload.repos
+        .map((r) => String(r?.name || "").trim())
+        .filter(Boolean)
+    );
+    for (const [name, manual] of Object.entries(manualRepoMap)) {
+      if (existingNames.has(name)) continue;
+      const normalizedUrl = normalizeRepoUrl(String(manual?.url || ""));
+      const parsed = parseGitHubOwnerRepo(normalizedUrl);
+      const route = repoHasDocs(name) ? `/${name}/` : null;
+      const submodulePath = `docs_external/${name}`;
+      const submoduleMeta = SUBMODULE_META.get(submodulePath);
+      payload.repos.push({
+        id: name,
+        name,
+        owner: parsed.owner,
+        fullName: parsed.owner && parsed.repo ? `${parsed.owner}/${parsed.repo}` : name,
+        url: normalizedUrl,
+        branch: String(manual?.branch || submoduleMeta?.branch || defaultBranch || "main"),
+        source: "manual",
+        topics: manualTopicMap[name] || [],
+        route,
+        hasDocs: Boolean(route),
+      });
+    }
+
+    payload.repos.sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || "")));
+    payload.generatedAt = new Date().toISOString();
+
+    fs.writeFileSync(REPO_CATALOG_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  } catch (err) {
+    console.warn(`! Could not refresh catalog availability: ${err?.message || err}`);
+  }
 }
 
 function addFrontmatterTitle(text) {
@@ -221,7 +476,9 @@ function toTitleFromFolder(folderName) {
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\bHpc\b/g, "HPC")
+    .replace(/\bSdsc\b/g, "SDSC");
 }
 
 function addReadmeFolderTitle(text, sourcePath = "") {
@@ -386,7 +643,16 @@ function patchMdx(text, sourcePath = "") {
   // add title first (uses original H1 before any later normalization)
   text = addFrontmatterTitle(text);
 
+  // Force each external repo page to use that repo's sidebar only.
+  text = applyRepoSidebar(text, sourcePath);
+
   let out = text
+    // Normalize malformed GitHub URLs occasionally found in source docs.
+    .replace(/https:\/\/github\.com:([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+(?:\.git)?)/g, "https://github.com/$1/$2")
+
+    // Convert URL autolinks in angle brackets to explicit markdown links for MDX safety.
+    .replace(/<((?:https?|ftp):\/\/[^>\s]+)>/gi, "[$1]($1)")
+
     // Fix known broken filename in upstream docs.
     .replaceAll("geting-started-exp-port-authentication.png", "expanse-portal-authentication.png")
 
@@ -452,6 +718,7 @@ function patchMdx(text, sourcePath = "") {
     .replaceAll("<br>", "<br />")
     .replaceAll("<br/>", "  \n")
     .replaceAll("<br />", "  \n")
+    .replaceAll("</br>", "  \n")
 
     // Email autolinks: <consult@sdsc.edu> -> [consult@sdsc.edu](mailto:consult@sdsc.edu)
     .replace(/<([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})>/gi, "[$1](mailto:$1)")
@@ -523,6 +790,30 @@ function patchMdx(text, sourcePath = "") {
   return out;
 }
 
+function generateRepoSidebars() {
+  const repoNames = Array.from(SUBMODULE_META.values())
+    .filter((m) => m.path.startsWith("docs_external/"))
+    .map((m) => m.path.replace(/^docs_external\//, ""))
+    .filter((name) => repoHasDocs(name))
+    .sort((a, b) => a.localeCompare(b));
+
+  const lines = [
+    'import type { SidebarsConfig } from "@docusaurus/plugin-content-docs";',
+    "",
+    "const sidebars: SidebarsConfig = {",
+    '  tutorialSidebar: [{ type: "doc", id: "index" }],',
+  ];
+
+  for (const repoName of repoNames) {
+    lines.push(
+      `  ${toSidebarId(repoName)}: [{ type: "autogenerated", dirName: ${JSON.stringify(repoName)} }],`
+    );
+  }
+
+  lines.push("};", "", "export default sidebars;", "");
+  fs.writeFileSync(SIDEBARS_PATH, lines.join("\n"), "utf8");
+}
+
 // Recursively copy + patch *.md/*.mdx only; other files copied as-is
 function walkAndCopy(srcDir, outDir) {
   ensureDir(outDir);
@@ -530,14 +821,27 @@ function walkAndCopy(srcDir, outDir) {
   for (const entry of fs.readdirSync(srcDir, { withFileTypes: true })) {
     const srcPath = path.join(srcDir, entry.name);
     const outPath = path.join(outDir, entry.name);
+    let stat = null;
+    try {
+      stat = fs.statSync(srcPath);
+    } catch {
+      // Broken symlink or vanished path in source repo; skip safely.
+      console.warn(`Skipping unreadable path: ${srcPath}`);
+      continue;
+    }
 
-    if (entry.isDirectory()) {
+    if (stat.isDirectory()) {
       walkAndCopy(srcPath, outPath);
       continue;
     }
 
     const ext = path.extname(entry.name).toLowerCase();
     if (ext === ".md" || ext === ".mdx") {
+      if (isQuarantinedSourceFile(srcPath)) {
+        console.warn(`Quarantined source file: ${srcPath}`);
+        writeQuarantinePlaceholder(outPath, srcPath);
+        continue;
+      }
       const raw = fs.readFileSync(srcPath, "utf8");
       fs.writeFileSync(outPath, patchMdx(raw, srcPath), "utf8");
     } else {
@@ -558,9 +862,11 @@ if (!fs.existsSync(SRC) || fs.readdirSync(SRC).length === 0) {
 // Ensure output root exists (never delete this folder)
 ensureDir(OUT_ROOT);
 ensureDir(PAGES_ROOT);
+ensureDir(DATA_ROOT);
 
 // Clean up legacy docs route for weekly highlights (moved to src/pages).
 fs.rmSync(path.join(OUT_ROOT, "updates", "what-changed-this-week.md"), { force: true });
+fs.rmSync(path.join(PAGES_ROOT, "weekly-highlights.md"), { force: true });
 
 // Update only the content coming from the submodule:
 // For each top-level entry in SRC, remove the corresponding entry in OUT_ROOT, then copy/patch it.
@@ -569,13 +875,18 @@ for (const entry of fs.readdirSync(SRC, { withFileTypes: true })) {
   const outPath = path.join(OUT_ROOT, entry.name);
 
   // Remove only what we're about to replace (NOT the whole OUT_ROOT)
-  fs.rmSync(outPath, { recursive: true, force: true });
+  removePathSafe(outPath);
 
   if (entry.isDirectory()) {
     walkAndCopy(srcPath, outPath);
   } else {
     const ext = path.extname(entry.name).toLowerCase();
     if (ext === ".md" || ext === ".mdx") {
+      if (isQuarantinedSourceFile(srcPath)) {
+        console.warn(`Quarantined source file: ${srcPath}`);
+        writeQuarantinePlaceholder(outPath, srcPath);
+        continue;
+      }
       const raw = fs.readFileSync(srcPath, "utf8");
       fs.writeFileSync(outPath, patchMdx(raw, srcPath), "utf8");
     } else {
@@ -584,6 +895,8 @@ for (const entry of fs.readdirSync(SRC, { withFileTypes: true })) {
   }
 }
 
-generateWeeklyChangesPage();
+generateWeeklyHighlightsData();
+refreshCatalogDocAvailability();
+generateRepoSidebars();
 
 console.log(`Patched external docs: ${SRC} -> ${OUT_ROOT}`);

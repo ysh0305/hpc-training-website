@@ -13,6 +13,7 @@ const config: Config = {
   markdown: {
     hooks: {
       onBrokenMarkdownLinks: "warn",
+      onBrokenMarkdownImages: "warn",
     },
   },
 
@@ -25,6 +26,7 @@ const config: Config = {
     [
       "classic",
       {
+        debug: false,
         docs: {
           routeBasePath: "/",
           sidebarPath: "./sidebars.ts",

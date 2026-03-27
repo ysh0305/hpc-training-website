@@ -19,6 +19,41 @@
       "name": "galyleo",
       "url": "https://github.com/mkandes/galyleo.git",
       "branch": "master"
+    },
+    {
+      "name": "sdsc-summer-institute-2021",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2021.git",
+      "topics": [
+        "summer-institute"
+      ]
+    },
+    {
+      "name": "sdsc-summer-institute-2022",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2022.git",
+      "topics": [
+        "summer-institute"
+      ]
+    },
+    {
+      "name": "sdsc-summer-institute-2023",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2023.git",
+      "topics": [
+        "summer-institute"
+      ]
+    },
+    {
+      "name": "sdsc-summer-institute-2024",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2024.git",
+      "topics": [
+        "summer-institute"
+      ]
+    },
+    {
+      "name": "sdsc-summer-institute-2025",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2025.git",
+      "topics": [
+        "summer-institute"
+      ]
     }
   ]
 }

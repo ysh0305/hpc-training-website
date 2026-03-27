@@ -35,6 +35,9 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 
+const REPO_CATALOG_PATH = path.resolve("src/data/repo-catalog.json");
+const SYNC_SUMMARY_PATH = path.resolve(process.env.SYNC_SUMMARY_PATH || "sync-summary.json");
+
 function sh(cmd, opts = {}) {
   return execSync(cmd, { encoding: "utf8", stdio: "pipe", ...opts }).trim();
 }
@@ -47,9 +50,9 @@ function ensureDir(p) {
 function readJson(p) {
   return JSON.parse(fs.readFileSync(p, "utf8"));
 }
-function ghApi(url, token) {
+function ghApi(url, token, accept = "application/vnd.github+json") {
   const out = execSync(
-    `curl -sSL -H "Authorization: Bearer ${token}" -H "Accept: application/vnd.github+json" "${url}"`,
+    `curl -sSL -H "Authorization: Bearer ${token}" -H "Accept: ${accept}" "${url}"`,
     { encoding: "utf8" }
   );
   return JSON.parse(out);
@@ -70,6 +73,104 @@ function listReposWithTopic(org, topic, token) {
     page += 1;
   }
   return all;
+}
+
+function parseGithubRepoFromUrl(url) {
+  if (!url) return null;
+
+  const https = url.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/i);
+  if (https) {
+    return { owner: https[1], name: https[2] };
+  }
+
+  const ssh = url.match(/^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/i);
+  if (ssh) {
+    return { owner: ssh[1], name: ssh[2] };
+  }
+
+  return null;
+}
+
+function listRepoTopics(owner, repo, token) {
+  const url = `https://api.github.com/repos/${owner}/${repo}/topics`;
+  const data = ghApi(url, token, "application/vnd.github+json");
+  return Array.isArray(data?.names) ? data.names : [];
+}
+
+function normalizeTopics(topics) {
+  if (!Array.isArray(topics)) return [];
+  return Array.from(
+    new Set(
+      topics
+        .map((t) => String(t).trim().toLowerCase())
+        .filter(Boolean)
+    )
+  ).sort();
+}
+
+function repoHasMarkdownDocs(pathPrefix, repoName) {
+  const repoDir = path.join(pathPrefix, repoName);
+  if (!fs.existsSync(repoDir)) return false;
+
+  const stack = [repoDir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      const abs = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(abs);
+        continue;
+      }
+      if (/\.(md|mdx)$/i.test(entry.name)) return true;
+    }
+  }
+  return false;
+}
+
+function buildCatalogEntry({
+  name,
+  owner,
+  url,
+  branch,
+  source,
+  topics = [],
+  hasDocs = false,
+}) {
+  const parsed = parseGithubRepoFromUrl(url);
+  const derivedOwner = owner || parsed?.owner || "";
+  return {
+    id: name,
+    name,
+    owner: derivedOwner,
+    fullName: derivedOwner ? `${derivedOwner}/${name}` : name,
+    url,
+    branch,
+    source, // "org" | "manual"
+    topics: normalizeTopics(topics),
+    route: `/${name}/`,
+    hasDocs,
+  };
+}
+
+function writeRepoCatalog(entries) {
+  ensureDir(path.dirname(REPO_CATALOG_PATH));
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    repos: entries.sort((a, b) => a.name.localeCompare(b.name)),
+  };
+  fs.writeFileSync(REPO_CATALOG_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  console.log(`Wrote catalog metadata: ${path.relative(process.cwd(), REPO_CATALOG_PATH)}`);
+}
+
+function writeSyncSummary(summary) {
+  const payload = {
+    ...summary,
+    generatedAt: new Date().toISOString(),
+  };
+  fs.writeFileSync(SYNC_SUMMARY_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  console.log(`Wrote sync summary: ${path.relative(process.cwd(), SYNC_SUMMARY_PATH)}`);
 }
 
 function toGitmodulesKey(subPath) {
@@ -130,66 +231,104 @@ function submoduleUpdateRemote(dest) {
   shInherit(`git submodule update --remote --recursive -- ${dest}`);
 }
 
-function addOrUpdateSubmodule({ name, url, default_branch }, cfg, kindLabel) {
+function addOrUpdateSubmodule({ name, url, default_branch }, cfg, kindLabel, summary) {
   const dest = path.join(cfg.pathPrefix, name);
   const branch = pickBranch(name, default_branch, cfg);
   const hasEntry = hasSubmoduleEntry(dest);
   const tracked = isSubmoduleTracked(dest);
+  const details = { name, kind: kindLabel.toLowerCase(), branch, path: dest, url };
 
-  ensureDir(cfg.pathPrefix);
+  try {
+    ensureDir(cfg.pathPrefix);
 
-  if (!fs.existsSync(dest) && (!hasEntry || !tracked)) {
-    console.log(`+ [${kindLabel}] Adding submodule ${name} -> ${dest} (branch=${branch})`);
-    if (hasEntry && !tracked) {
-      console.log(`! [${kindLabel}] Found stale .gitmodules entry for ${dest}; re-adding with --force`);
+    let added = false;
+    if (!fs.existsSync(dest) && (!hasEntry || !tracked)) {
+      console.log(`+ [${kindLabel}] Adding submodule ${name} -> ${dest} (branch=${branch})`);
+      if (hasEntry && !tracked) {
+        console.log(`! [${kindLabel}] Found stale .gitmodules entry for ${dest}; re-adding with --force`);
+      }
+      submoduleAdd(url, dest, hasEntry);
+      added = true;
+    } else {
+      // If directory exists but isn't a submodule, skip for safety
+      if (fs.existsSync(dest) && !isProbablySubmoduleDir(dest)) {
+        const reason = `exists but not a tracked submodule: ${dest}`;
+        console.log(`! [${kindLabel}] Skipping ${reason}`);
+        summary.skipped.push({ ...details, reason });
+        return false;
+      }
+
+      if (!tracked && hasEntry) {
+        console.log(`! [${kindLabel}] Submodule entry exists but is not tracked: ${dest}; repairing`);
+        submoduleAdd(url, dest, true);
+      }
+
+      console.log(`= [${kindLabel}] Submodule exists: ${name}`);
     }
-    submoduleAdd(url, dest, hasEntry);
-  } else {
-    // If directory exists but isn't a submodule, skip for safety
-    if (fs.existsSync(dest) && !isProbablySubmoduleDir(dest)) {
-      console.log(
-        `! [${kindLabel}] Skipping ${dest} (exists but not a tracked submodule). ` +
-          `Rename/remove manually if you want it managed.`
-      );
-      return;
-    }
 
-    if (!tracked && hasEntry) {
-      console.log(`! [${kindLabel}] Submodule entry exists but is not tracked: ${dest}; repairing`);
-      submoduleAdd(url, dest, true);
-    }
+    setGitmodulesBranch(dest, branch);
+    submoduleEnsureInit(dest);
 
-    console.log(`= [${kindLabel}] Submodule exists: ${name}`);
+    console.log(`↑ [${kindLabel}] Updating ${name} to latest on "${branch}"`);
+    submoduleUpdateRemote(dest);
+
+    if (added) summary.added.push(details);
+    else summary.updated.push(details);
+    return true;
+  } catch (err) {
+    const error = err?.message || String(err);
+    console.error(`ERROR: failed to sync ${name}: ${error}`);
+    summary.failed.push({ ...details, error });
+    return false;
   }
-
-  setGitmodulesBranch(dest, branch);
-  submoduleEnsureInit(dest);
-
-  console.log(`↑ [${kindLabel}] Updating ${name} to latest on "${branch}"`);
-  submoduleUpdateRemote(dest);
 }
 
-function removeSubmodule(dest) {
-  console.log(`- Removing submodule ${dest}`);
-  shInherit(`git submodule deinit -f ${dest}`);
-  shInherit(`git rm -f ${dest}`);
+function removeSubmodule(dest, summary, reason = "") {
+  const name = path.basename(dest);
+  const details = { name, kind: "auto-remove", path: dest, reason };
+  try {
+    console.log(`- Removing submodule ${dest}`);
+    shInherit(`git submodule deinit -f ${dest}`);
+    shInherit(`git rm -f ${dest}`);
+    summary.removed.push(details);
+    return true;
+  } catch (err) {
+    const error = err?.message || String(err);
+    console.error(`ERROR: failed to remove ${dest}: ${error}`);
+    summary.failed.push({ ...details, error });
+    return false;
+  }
 }
 
 function main() {
-  const cfgPath = path.resolve("submodules.docs.json");
-  if (!fs.existsSync(cfgPath)) {
-    console.error("ERROR: submodules.docs.json not found at repo root");
-    process.exit(1);
-  }
+  const summary = {
+    mode: "manual-only",
+    org: "",
+    topic: "",
+    pathPrefix: "",
+    defaultBranch: "",
+    autoRemove: false,
+    manualReposConfigured: 0,
+    orgReposDiscovered: 0,
+    added: [],
+    updated: [],
+    removed: [],
+    skipped: [],
+    failed: [],
+  };
+  let fatalError = null;
 
-  const cfg = readJson(cfgPath);
+  try {
+    const cfgPath = path.resolve("submodules.docs.json");
+    if (!fs.existsSync(cfgPath)) {
+      throw new Error("submodules.docs.json not found at repo root");
+    }
 
-  // Token required for GitHub API + possibly private repo access
-  const token = process.env.GH_TOKEN;
-  if (!token) {
-    console.error("ERROR: GH_TOKEN env var is required");
-    process.exit(1);
-  }
+    const cfg = readJson(cfgPath);
+
+  // Token is required for GitHub API operations (org/topic discovery + topic fetch),
+  // but manual submodule sync can run without it.
+  const token = process.env.GH_TOKEN || "";
 
   // Normalize config
   cfg.org = cfg.org || process.env.ORG_NAME;
@@ -201,14 +340,18 @@ function main() {
   cfg.branchOverrides = cfg.branchOverrides ?? {};
   cfg.manualRepos = cfg.manualRepos ?? [];
 
-  const excludeSet = new Set(cfg.exclude);
+    const excludeSet = new Set(cfg.exclude);
+    summary.org = cfg.org || "";
+    summary.topic = cfg.topic || "documentation";
+    summary.pathPrefix = cfg.pathPrefix;
+    summary.defaultBranch = cfg.defaultBranch;
+    summary.autoRemove = cfg.autoRemove;
+    summary.manualReposConfigured = cfg.manualRepos.length;
 
   // Validate manual repos
   for (const r of cfg.manualRepos) {
     if (!r?.name || !r?.url) {
-      console.error("ERROR: Each manualRepos entry must have { name, url, branch? }");
-      console.error("Bad entry:", JSON.stringify(r));
-      process.exit(1);
+      throw new Error(`Each manualRepos entry must have { name, url, branch? }. Bad entry: ${JSON.stringify(r)}`);
     }
   }
 
@@ -222,11 +365,16 @@ function main() {
 
   // 1) Fetch org repos with topic
   let orgRepos = [];
-  if (cfg.org) {
+  const canDiscoverOrg = Boolean(cfg.org && token);
+  summary.mode = canDiscoverOrg ? "org+manual" : "manual-only";
+  if (canDiscoverOrg) {
     orgRepos = listReposWithTopic(cfg.org, cfg.topic, token).filter((r) => !excludeSet.has(r.name));
+  } else if (cfg.org && !token) {
+    console.log("GH_TOKEN not set; skipping org/topic discovery and running manual repos only.");
   } else {
     console.log("No org configured; skipping org topic discovery.");
   }
+  summary.orgReposDiscovered = orgRepos.length;
 
   // 2) Build protection set for manual repos (never auto-remove)
   const manualNames = new Set(cfg.manualRepos.map((r) => r.name));
@@ -236,7 +384,7 @@ function main() {
   //    - under pathPrefix
   //    - NOT in org topic set
   //    - NOT in manual repos list
-  if (cfg.autoRemove) {
+  if (cfg.autoRemove && canDiscoverOrg) {
     const validOrgNames = new Set(orgRepos.map((r) => r.name));
     const prefixDir = cfg.pathPrefix;
 
@@ -254,25 +402,53 @@ function main() {
         const subPath = path.join(prefixDir, name);
         if (hasSubmoduleEntry(subPath)) {
           console.log(`- [AUTO] ${name} no longer matches org topic; removing`);
-          removeSubmodule(subPath);
+          removeSubmodule(subPath, summary, "missing topic match");
         } else {
           console.log(`! [AUTO] Not removing ${subPath} (not a tracked submodule)`);
         }
       }
     }
+  } else if (cfg.autoRemove && !canDiscoverOrg) {
+    console.log("Skipping autoRemove because org/topic discovery is unavailable without GH_TOKEN.");
   }
 
   // 4) Add/update org-managed repos
   console.log(`Found ${orgRepos.length} org repos with topic "${cfg.topic}" (excluding configured excludes).`);
+  const catalogEntries = [];
+
   for (const repo of orgRepos) {
-    addOrUpdateSubmodule(
+    const branch = pickBranch(repo.name, repo.default_branch, cfg);
+    const ok = addOrUpdateSubmodule(
       {
         name: repo.name,
         url: repo.clone_url, // https clone
         default_branch: repo.default_branch,
       },
       cfg,
-      "ORG"
+      "ORG",
+      summary
+    );
+    if (!ok) continue;
+
+    let topics = [];
+    if (token) {
+      try {
+        topics = listRepoTopics(cfg.org, repo.name, token);
+      } catch (err) {
+        console.warn(`! [ORG] Could not fetch topics for ${cfg.org}/${repo.name}: ${err?.message || err}`);
+      }
+    }
+
+    catalogEntries.push(
+      buildCatalogEntry({
+        name: repo.name,
+        owner: cfg.org,
+        url: repo.html_url || repo.clone_url,
+        branch,
+        source: "org",
+        topics,
+        hasDocs: repoHasMarkdownDocs(cfg.pathPrefix, repo.name),
+      })
     );
   }
 
@@ -291,17 +467,47 @@ function main() {
         },
       };
 
-      addOrUpdateSubmodule(
+      const ok = addOrUpdateSubmodule(
         {
           name: r.name,
           url: r.url,
           default_branch: r.branch || cfg.defaultBranch,
         },
         manualCfg,
-        "MANUAL"
+        "MANUAL",
+        summary
+      );
+      if (!ok) continue;
+
+      let topics = normalizeTopics([
+        ...(Array.isArray(r.topics) ? r.topics : []),
+        ...(r.topic ? [r.topic] : []),
+      ]);
+      if (topics.length === 0 && token) {
+        const parsed = parseGithubRepoFromUrl(r.url);
+        if (parsed) {
+          try {
+            topics = listRepoTopics(parsed.owner, parsed.name, token);
+          } catch (err) {
+            console.warn(`! [MANUAL] Could not fetch topics for ${parsed.owner}/${parsed.name}: ${err?.message || err}`);
+          }
+        }
+      }
+
+      catalogEntries.push(
+        buildCatalogEntry({
+          name: r.name,
+          url: r.url.replace(/\.git$/, ""),
+          branch: r.branch || cfg.defaultBranch,
+          source: "manual",
+          topics,
+          hasDocs: repoHasMarkdownDocs(cfg.pathPrefix, r.name),
+        })
       );
     }
   }
+
+  writeRepoCatalog(catalogEntries);
 
   // 6) Commit if any changes
   const status = sh("git status --porcelain");
@@ -311,12 +517,27 @@ function main() {
   }
 
   console.log("Staging changes...");
-  shInherit(`git add .gitmodules ${cfg.pathPrefix}`);
+  shInherit(`git add .gitmodules ${cfg.pathPrefix} src/data/repo-catalog.json`);
 
   console.log("Committing...");
   shInherit(`git commit -m "chore: sync documentation submodules"`);
 
-  console.log("Done.");
+    console.log("Done.");
+  } catch (err) {
+    fatalError = err;
+    console.error(`ERROR: ${err?.message || err}`);
+  } finally {
+    summary.status =
+      fatalError || summary.failed.length > 0 ? "failed" : "success";
+    if (fatalError) {
+      summary.error = fatalError?.message || String(fatalError);
+    }
+    writeSyncSummary(summary);
+  }
+
+  if (fatalError || summary.failed.length > 0) {
+    process.exit(1);
+  }
 }
 
 main();

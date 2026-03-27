@@ -18,3 +18,19 @@
 	path = docs_external/hpc-security
 	url = https://github.com/sdsc-hpc-training-org/hpc-security.git
 	branch = master
+[submodule "docs_external/sdsc-summer-institute-2025"]
+	path = docs_external/sdsc-summer-institute-2025
+	url = https://github.com/sdsc/sdsc-summer-institute-2025.git
+	branch = main
+[submodule "docs_external/sdsc-summer-institute-2021"]
+	path = docs_external/sdsc-summer-institute-2021
+	url = https://github.com/sdsc/sdsc-summer-institute-2021.git
+[submodule "docs_external/sdsc-summer-institute-2022"]
+	path = docs_external/sdsc-summer-institute-2022
+	url = https://github.com/sdsc/sdsc-summer-institute-2022.git
+[submodule "docs_external/sdsc-summer-institute-2023"]
+	path = docs_external/sdsc-summer-institute-2023
+	url = https://github.com/sdsc/sdsc-summer-institute-2023.git
+[submodule "docs_external/sdsc-summer-institute-2024"]
+	path = docs_external/sdsc-summer-institute-2024
+	url = https://github.com/sdsc/sdsc-summer-institute-2024.git

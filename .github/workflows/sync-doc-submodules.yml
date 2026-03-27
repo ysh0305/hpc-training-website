@@ -3,6 +3,8 @@ name: Sync documentation submodules
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: "0 9 * * *"   # daily; adjust as needed
@@ -17,7 +19,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  pr-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Patch external docs
+        run: node scripts/patch-external-docs.mjs
+
+      - name: Build site
+        run: npm run build
+
   sync-build:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (with submodules)
@@ -39,7 +67,26 @@ jobs:
       - name: Sync docs submodules by org topic
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SYNC_SUMMARY_PATH: sync-summary.json
         run: node scripts/sync-doc-submodules.mjs
+
+      - name: Print sync summary
+        if: always()
+        run: |
+          if [ -f sync-summary.json ]; then
+            echo "==== sync summary ===="
+            cat sync-summary.json
+          else
+            echo "sync-summary.json was not produced"
+          fi
+
+      - name: Upload sync summary artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync-summary
+          path: sync-summary.json
+          if-no-files-found: warn
 
       - name: Push changes
         run: git push
@@ -62,6 +109,7 @@ jobs:
           path: build
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: sync-build
     runs-on: ubuntu-latest
     environment:
