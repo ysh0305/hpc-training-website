@@ -54,6 +54,46 @@
       "topics": [
         "summer-institute"
       ]
+    },
+    {
+      "name": "ciml-summer-institute-2021",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2021.git",
+      "topics": [
+        "ciml",
+        "summer-institute"
+      ]
+    },
+    {
+      "name": "ciml-summer-institute-2022",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2022.git",
+      "topics": [
+        "ciml",
+        "summer-institute"
+      ]
+    },
+    {
+      "name": "ciml-summer-institute-2023",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2023.git",
+      "topics": [
+        "ciml",
+        "summer-institute"
+      ]
+    },
+    {
+      "name": "ciml-summer-institute-2024",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2024.git",
+      "topics": [
+        "ciml",
+        "summer-institute"
+      ]
+    },
+    {
+      "name": "ciml-summer-institute-2025",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2025.git",
+      "topics": [
+        "ciml",
+        "summer-institute"
+      ]
     }
   ]
 }

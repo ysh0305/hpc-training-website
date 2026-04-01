@@ -713,6 +713,40 @@ function fixFileSpecificLinks(text, sourcePath) {
     );
   }
 
+  if (src.endsWith("/ciml-summer-institute-2021/4.2_spark_hands_on/README.md")) {
+    // These command lines are plain text upstream; MDX treats `export ...` as ESM.
+    text = text
+      .replace(/^(\s*export PATH=.*)$/m, "```bash\n$1")
+      .replace(/^(\s*galyleo\.sh launch.*)$/m, "$1\n```");
+  }
+
+  if (src.endsWith("/ciml-summer-institute-2021/4.5_deep_learning_transfer_learning_hands_on/README.md")) {
+    // These command lines are plain text upstream; MDX treats `export ...` as ESM.
+    text = text
+      .replace(/^(\s*export PATH=.*)$/m, "```bash\n$1")
+      .replace(/^(\s*galyleo\.sh launch.*)$/m, "$1\n```");
+  }
+
+  if (src.endsWith("/ciml-summer-institute-2021/4.4_deep_learning_hands_on/README.md")) {
+    // Literal conflict marker symbols break MDX JSX parsing.
+    text = text.replace(/<<<<<<\s*-------/g, "&lt;&lt;&lt;&lt;&lt;&lt; -------");
+  }
+
+  if (src.endsWith("/ciml-summer-institute-2021/README.md")) {
+    // In-table anchor tags are dropped by MD/MDX table parsing; route presenter links to a stable section.
+    text = text
+      .replace(/\]\(#(?:thomas|kandes|rose|sivagnanam|sinkovit|goetz|shantharam|nguyen|rodriguez)\)/gi, "](#instructors)")
+      .replace(/\[\(bio\)\]\(TBD\)/g, "bio (TBD)");
+  }
+
+  if (src.endsWith("/ciml-summer-institute-2021/0_preparation/README.md")) {
+    text = text.replace(/\[presenter\]\(#tbd\)/gi, "presenter");
+  }
+
+  if (src.endsWith("/ciml-summer-institute-2024/README.md")) {
+    text = text.replace(/\{##/g, "{#");
+  }
+
   if (src.endsWith("/expanse-101/expanse-101/compiling-linking.md")) {
     text = text.replace(/\]\(#run-jobs\)/gi, "](./running-jobs)");
   }

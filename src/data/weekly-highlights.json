@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-04-01T17:36:40.942Z",
+  "generatedAt": "2026-04-01T21:12:12.276Z",
   "summary": {
-    "total": 10,
+    "total": 15,
     "newlyAdded": 0,
     "updated": 0
   },
@@ -87,6 +87,22 @@
       "firstSeenAt": "2026-03-27T17:45:20.635Z"
     },
     {
+      "id": "ciml-summer-institute-2025",
+      "name": "ciml-summer-institute-2025",
+      "displayName": "CIML Summer Institute 2025",
+      "repoUrl": "https://github.com/ciml-org/ciml-summer-institute-2025",
+      "branch": "main",
+      "tutorialLink": "/ciml-summer-institute-2025/",
+      "hasDocs": true,
+      "latestCommitHash": "b5070ff4ded8e927dbee4578d59009782d188e4b",
+      "latestCommitShort": "b5070ff",
+      "latestCommitAt": "2025-07-24T02:14:28-07:00",
+      "latestCommitSubject": "Update README.md",
+      "isNewlyAdded": false,
+      "isUpdated": false,
+      "firstSeenAt": "2026-04-01T18:13:49.983Z"
+    },
+    {
       "id": "sdsc-summer-institute-2024",
       "name": "sdsc-summer-institute-2024",
       "displayName": "SDSC Summer Institute 2024",
@@ -119,6 +135,22 @@
       "firstSeenAt": "2026-03-27T18:15:17.212Z"
     },
     {
+      "id": "ciml-summer-institute-2024",
+      "name": "ciml-summer-institute-2024",
+      "displayName": "CIML Summer Institute 2024",
+      "repoUrl": "https://github.com/ciml-org/ciml-summer-institute-2024",
+      "branch": "main",
+      "tutorialLink": "/ciml-summer-institute-2024/",
+      "hasDocs": true,
+      "latestCommitHash": "0248c2f61ce5413f439ab108f8e0977408927d44",
+      "latestCommitShort": "0248c2f",
+      "latestCommitAt": "2024-08-20T10:42:41-07:00",
+      "latestCommitSubject": "Update README.md",
+      "isNewlyAdded": false,
+      "isUpdated": false,
+      "firstSeenAt": "2026-04-01T18:13:49.983Z"
+    },
+    {
       "id": "hpc-security",
       "name": "hpc-security",
       "displayName": "HPC Security",
@@ -133,6 +165,22 @@
       "isNewlyAdded": false,
       "isUpdated": false,
       "firstSeenAt": "2026-03-27T17:08:19.178Z"
+    },
+    {
+      "id": "ciml-summer-institute-2023",
+      "name": "ciml-summer-institute-2023",
+      "displayName": "CIML Summer Institute 2023",
+      "repoUrl": "https://github.com/ciml-org/ciml-summer-institute-2023",
+      "branch": "main",
+      "tutorialLink": "/ciml-summer-institute-2023/",
+      "hasDocs": true,
+      "latestCommitHash": "2d76685984f850c6dc37b0589b5135777d6eeee6",
+      "latestCommitShort": "2d76685",
+      "latestCommitAt": "2024-06-25T12:28:11-07:00",
+      "latestCommitSubject": "update welcome file",
+      "isNewlyAdded": false,
+      "isUpdated": false,
+      "firstSeenAt": "2026-04-01T18:13:49.983Z"
     },
     {
       "id": "sdsc-summer-institute-2023",
@@ -165,6 +213,38 @@
       "isNewlyAdded": false,
       "isUpdated": false,
       "firstSeenAt": "2026-03-27T18:15:17.212Z"
+    },
+    {
+      "id": "ciml-summer-institute-2022",
+      "name": "ciml-summer-institute-2022",
+      "displayName": "CIML Summer Institute 2022",
+      "repoUrl": "https://github.com/ciml-org/ciml-summer-institute-2022",
+      "branch": "main",
+      "tutorialLink": "/ciml-summer-institute-2022/",
+      "hasDocs": true,
+      "latestCommitHash": "9f6a8d5cbbd9d492c0751444c0510e2cce998060",
+      "latestCommitShort": "9f6a8d5",
+      "latestCommitAt": "2022-11-08T17:51:10-08:00",
+      "latestCommitSubject": "Merge pull request #6 from Justinian074/patch-1",
+      "isNewlyAdded": false,
+      "isUpdated": false,
+      "firstSeenAt": "2026-04-01T18:13:49.983Z"
+    },
+    {
+      "id": "ciml-summer-institute-2021",
+      "name": "ciml-summer-institute-2021",
+      "displayName": "CIML Summer Institute 2021",
+      "repoUrl": "https://github.com/ciml-org/ciml-summer-institute-2021",
+      "branch": "main",
+      "tutorialLink": "/ciml-summer-institute-2021/",
+      "hasDocs": true,
+      "latestCommitHash": "c11392b1eeae0df7f280e017c9eabfc9a793e5c5",
+      "latestCommitShort": "c11392b",
+      "latestCommitAt": "2021-08-13T10:55:05-07:00",
+      "latestCommitSubject": "Update README.md",
+      "isNewlyAdded": false,
+      "isUpdated": false,
+      "firstSeenAt": "2026-04-01T18:13:49.983Z"
     }
   ]
 }
