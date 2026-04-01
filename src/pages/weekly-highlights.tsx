@@ -31,6 +31,12 @@ type WeeklyHighlightsPayload = {
 const payload = highlightsData as WeeklyHighlightsPayload;
 const repos: WeeklyRepo[] = Array.isArray(payload.repos) ? payload.repos : [];
 
+function extractYear(value: string) {
+  const m = value.match(/(?:19|20)\d{2}/g);
+  if (!m || m.length === 0) return null;
+  return Number(m[m.length - 1]);
+}
+
 function toDisplayLabel(value: string) {
   return value
     .replace(/[_-]+/g, " ")
@@ -38,15 +44,23 @@ function toDisplayLabel(value: string) {
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase())
     .replace(/\bHpc\b/g, "HPC")
-    .replace(/\bSdsc\b/g, "SDSC");
+    .replace(/\bSdsc\b/g, "SDSC")
+    .replace(/\bCiml\b/g, "CIML");
 }
 
 export default function WeeklyHighlightsPage() {
-  const availableCount = repos.filter((r) => Boolean(r.hasDocs && r.tutorialLink)).length;
-  const pendingCount = repos.length - availableCount;
-  const newCount = payload.summary?.newlyAdded ?? repos.filter((r) => r.isNewlyAdded).length;
-  const updatedCount = payload.summary?.updated ?? repos.filter((r) => r.isUpdated).length;
-  const totalCount = payload.summary?.total ?? repos.length;
+  const sortedRepos = [...repos].sort((a, b) => {
+    const ay = extractYear(a.name) ?? -1;
+    const by = extractYear(b.name) ?? -1;
+    if (ay !== by) return by - ay;
+    return a.name.localeCompare(b.name);
+  });
+
+  const availableCount = sortedRepos.filter((r) => Boolean(r.hasDocs && r.tutorialLink)).length;
+  const pendingCount = sortedRepos.length - availableCount;
+  const newCount = payload.summary?.newlyAdded ?? sortedRepos.filter((r) => r.isNewlyAdded).length;
+  const updatedCount = payload.summary?.updated ?? sortedRepos.filter((r) => r.isUpdated).length;
+  const totalCount = payload.summary?.total ?? sortedRepos.length;
 
   function formatDate(value?: string) {
     if (!value) return "Unknown";
@@ -80,7 +94,7 @@ export default function WeeklyHighlightsPage() {
         </section>
 
         <section className="weekly-timeline">
-          {repos.map((repo) => (
+          {sortedRepos.map((repo) => (
             <article key={repo.id} className="weekly-item">
               <div className="weekly-item-dot" aria-hidden="true" />
               <h2 className="weekly-item-title">{repo.displayName || toDisplayLabel(repo.name)}</h2>

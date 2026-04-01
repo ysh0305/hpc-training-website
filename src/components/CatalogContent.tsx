@@ -30,7 +30,8 @@ function toDisplayLabel(value: string) {
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase())
     .replace(/\bHpc\b/g, "HPC")
-    .replace(/\bSdsc\b/g, "SDSC");
+    .replace(/\bSdsc\b/g, "SDSC")
+    .replace(/\bCiml\b/g, "CIML");
 }
 
 function normalizeTopic(topic: string) {
@@ -40,6 +41,7 @@ function normalizeTopic(topic: string) {
 export default function CatalogContent() {
   const [selectedTopic, setSelectedTopic] = useState("all");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"date" | "alphabet">("date");
 
   const topicOptions = useMemo(() => {
     const set = new Set<string>();
@@ -53,8 +55,14 @@ export default function CatalogContent() {
   }, []);
 
   const filteredRepos = useMemo(() => {
+    function extractYear(value: string) {
+      const m = value.match(/(?:19|20)\d{2}/g);
+      if (!m || m.length === 0) return null;
+      return Number(m[m.length - 1]);
+    }
+
     const q = search.trim().toLowerCase();
-    return repos.filter((repo) => {
+    const result = repos.filter((repo) => {
       const repoTopics = (repo.topics || []).map(normalizeTopic);
       const topicOk = selectedTopic === "all" || repoTopics.includes(selectedTopic);
       if (!topicOk) return false;
@@ -65,7 +73,20 @@ export default function CatalogContent() {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [search, selectedTopic]);
+
+    result.sort((a, b) => {
+      if (sortBy === "alphabet") {
+        return a.name.localeCompare(b.name);
+      }
+
+      const ay = extractYear(a.name) ?? -1;
+      const by = extractYear(b.name) ?? -1;
+      if (ay !== by) return by - ay;
+      return a.name.localeCompare(b.name);
+    });
+
+    return result;
+  }, [search, selectedTopic, sortBy]);
 
   return (
     <>
@@ -77,17 +98,26 @@ export default function CatalogContent() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <div className="catalog-topics">
-          {topicOptions.map((topic) => (
-            <button
-              key={topic}
-              type="button"
-              className={`catalog-topic-chip ${selectedTopic === topic ? "is-active" : ""}`}
-              onClick={() => setSelectedTopic(topic)}
-            >
-              {topic === "all" ? "All Topics" : toDisplayLabel(topic)}
-            </button>
-          ))}
+        <div className="catalog-filter-row">
+          <div className="catalog-topics">
+            {topicOptions.map((topic) => (
+              <button
+                key={topic}
+                type="button"
+                className={`catalog-topic-chip ${selectedTopic === topic ? "is-active" : ""}`}
+                onClick={() => setSelectedTopic(topic)}
+              >
+                {topic === "all" ? "All Topics" : toDisplayLabel(topic)}
+              </button>
+            ))}
+          </div>
+          <label className="catalog-sort">
+            <span>Sort by</span>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as "date" | "alphabet")}>
+              <option value="date">Date (newest first)</option>
+              <option value="alphabet">Alphabet (A-Z)</option>
+            </select>
+          </label>
         </div>
       </div>
 
