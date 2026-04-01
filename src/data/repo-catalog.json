@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-01T17:26:31.312Z",
+  "generatedAt": "2026-04-01T17:32:06.144Z",
   "repos": [
     {
       "id": "basic_skills",
@@ -9,7 +9,9 @@
       "url": "https://github.com/sdsc-hpc-training-org/basic_skills",
       "branch": "hpc-training-doc",
       "source": "org",
-      "topics": [],
+      "topics": [
+        "documentation"
+      ],
       "route": "/basic_skills/",
       "hasDocs": true
     },
@@ -25,8 +27,8 @@
         "ciml",
         "summer-institute"
       ],
-      "route": null,
-      "hasDocs": false
+      "route": "/ciml-summer-institute-2021/",
+      "hasDocs": true
     },
     {
       "id": "ciml-summer-institute-2022",
@@ -40,8 +42,8 @@
         "ciml",
         "summer-institute"
       ],
-      "route": null,
-      "hasDocs": false
+      "route": "/ciml-summer-institute-2022/",
+      "hasDocs": true
     },
     {
       "id": "ciml-summer-institute-2023",
@@ -55,8 +57,8 @@
         "ciml",
         "summer-institute"
       ],
-      "route": null,
-      "hasDocs": false
+      "route": "/ciml-summer-institute-2023/",
+      "hasDocs": true
     },
     {
       "id": "ciml-summer-institute-2024",
@@ -70,8 +72,8 @@
         "ciml",
         "summer-institute"
       ],
-      "route": null,
-      "hasDocs": false
+      "route": "/ciml-summer-institute-2024/",
+      "hasDocs": true
     },
     {
       "id": "ciml-summer-institute-2025",
@@ -85,8 +87,8 @@
         "ciml",
         "summer-institute"
       ],
-      "route": null,
-      "hasDocs": false
+      "route": "/ciml-summer-institute-2025/",
+      "hasDocs": true
     },
     {
       "id": "expanse-101",
@@ -96,7 +98,10 @@
       "url": "https://github.com/sdsc-hpc-training-org/expanse-101",
       "branch": "docusaurus",
       "source": "org",
-      "topics": [],
+      "topics": [
+        "documentation",
+        "expanse"
+      ],
       "route": "/expanse-101/",
       "hasDocs": true
     },
@@ -120,7 +125,9 @@
       "url": "https://github.com/sdsc-hpc-training-org/hpc-security",
       "branch": "master",
       "source": "org",
-      "topics": [],
+      "topics": [
+        "documentation"
+      ],
       "route": "/hpc-security/",
       "hasDocs": true
     },
@@ -202,7 +209,9 @@
       "url": "https://github.com/sdsc-hpc-training-org/tscc-101",
       "branch": "main",
       "source": "org",
-      "topics": [],
+      "topics": [
+        "documentation"
+      ],
       "route": "/tscc-101/",
       "hasDocs": true
     }
