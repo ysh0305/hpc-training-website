@@ -1,0 +1,13 @@
+exclude:
+  - docs_external
+  - node_modules
+  - .docusaurus
+  - build
+  - scripts
+  - src
+  - static
+  - package.json
+  - package-lock.json
+  - tsconfig.json
+  - sidebars.ts
+  - docusaurus.config.ts
