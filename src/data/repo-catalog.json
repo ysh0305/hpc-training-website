@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-01T21:12:12.285Z",
+  "generatedAt": "2026-04-01T21:45:31.074Z",
   "repos": [
     {
       "id": "basic_skills",
@@ -13,6 +13,81 @@
         "documentation"
       ],
       "route": "/basic_skills/",
+      "hasDocs": true
+    },
+    {
+      "id": "ciml-summer-institute-2021",
+      "name": "ciml-summer-institute-2021",
+      "owner": "ciml-org",
+      "fullName": "ciml-org/ciml-summer-institute-2021",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2021",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "ciml",
+        "summer-institute"
+      ],
+      "route": "/ciml-summer-institute-2021/",
+      "hasDocs": true
+    },
+    {
+      "id": "ciml-summer-institute-2022",
+      "name": "ciml-summer-institute-2022",
+      "owner": "ciml-org",
+      "fullName": "ciml-org/ciml-summer-institute-2022",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2022",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "ciml",
+        "summer-institute"
+      ],
+      "route": "/ciml-summer-institute-2022/",
+      "hasDocs": true
+    },
+    {
+      "id": "ciml-summer-institute-2023",
+      "name": "ciml-summer-institute-2023",
+      "owner": "ciml-org",
+      "fullName": "ciml-org/ciml-summer-institute-2023",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2023",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "ciml",
+        "summer-institute"
+      ],
+      "route": "/ciml-summer-institute-2023/",
+      "hasDocs": true
+    },
+    {
+      "id": "ciml-summer-institute-2024",
+      "name": "ciml-summer-institute-2024",
+      "owner": "ciml-org",
+      "fullName": "ciml-org/ciml-summer-institute-2024",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2024",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "ciml",
+        "summer-institute"
+      ],
+      "route": "/ciml-summer-institute-2024/",
+      "hasDocs": true
+    },
+    {
+      "id": "ciml-summer-institute-2025",
+      "name": "ciml-summer-institute-2025",
+      "owner": "ciml-org",
+      "fullName": "ciml-org/ciml-summer-institute-2025",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2025",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "ciml",
+        "summer-institute"
+      ],
+      "route": "/ciml-summer-institute-2025/",
       "hasDocs": true
     },
     {
