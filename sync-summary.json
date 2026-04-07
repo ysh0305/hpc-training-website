@@ -1,0 +1,95 @@
+{
+  "mode": "manual-only",
+  "org": "sdsc-hpc-training-org",
+  "topic": "documentation",
+  "pathPrefix": "docs_external",
+  "defaultBranch": "main",
+  "autoRemove": true,
+  "manualReposConfigured": 11,
+  "orgReposDiscovered": 0,
+  "added": [],
+  "updated": [
+    {
+      "name": "galyleo",
+      "kind": "manual",
+      "branch": "master",
+      "path": "docs_external/galyleo",
+      "url": "https://github.com/mkandes/galyleo.git"
+    },
+    {
+      "name": "sdsc-summer-institute-2021",
+      "kind": "manual",
+      "branch": "main",
+      "path": "docs_external/sdsc-summer-institute-2021",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2021.git"
+    },
+    {
+      "name": "sdsc-summer-institute-2022",
+      "kind": "manual",
+      "branch": "main",
+      "path": "docs_external/sdsc-summer-institute-2022",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2022.git"
+    },
+    {
+      "name": "sdsc-summer-institute-2023",
+      "kind": "manual",
+      "branch": "main",
+      "path": "docs_external/sdsc-summer-institute-2023",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2023.git"
+    },
+    {
+      "name": "sdsc-summer-institute-2024",
+      "kind": "manual",
+      "branch": "main",
+      "path": "docs_external/sdsc-summer-institute-2024",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2024.git"
+    },
+    {
+      "name": "sdsc-summer-institute-2025",
+      "kind": "manual",
+      "branch": "main",
+      "path": "docs_external/sdsc-summer-institute-2025",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2025.git"
+    },
+    {
+      "name": "ciml-summer-institute-2021",
+      "kind": "manual",
+      "branch": "main",
+      "path": "docs_external/ciml-summer-institute-2021",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2021.git"
+    },
+    {
+      "name": "ciml-summer-institute-2022",
+      "kind": "manual",
+      "branch": "main",
+      "path": "docs_external/ciml-summer-institute-2022",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2022.git"
+    },
+    {
+      "name": "ciml-summer-institute-2023",
+      "kind": "manual",
+      "branch": "main",
+      "path": "docs_external/ciml-summer-institute-2023",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2023.git"
+    },
+    {
+      "name": "ciml-summer-institute-2024",
+      "kind": "manual",
+      "branch": "main",
+      "path": "docs_external/ciml-summer-institute-2024",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2024.git"
+    },
+    {
+      "name": "ciml-summer-institute-2025",
+      "kind": "manual",
+      "branch": "main",
+      "path": "docs_external/ciml-summer-institute-2025",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2025.git"
+    }
+  ],
+  "removed": [],
+  "skipped": [],
+  "failed": [],
+  "status": "success",
+  "generatedAt": "2026-04-07T20:30:30.578Z"
+}
