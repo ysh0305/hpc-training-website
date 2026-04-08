@@ -2,22 +2,32 @@
 
 This repository hosts the SDSC HPC training docs site built with [Docusaurus](https://docusaurus.io/).
 
-## How It Works
+## Architecture Overview
 
-- Documentation source repos are tracked as git submodules under `docs_external/`.
-- Submodules are synced from your GitHub org by topic (`documentation`) using `scripts/sync-doc-submodules.mjs`.
-- External docs are patched/copied into `docs/` by `scripts/patch-external-docs.mjs`.
-- Docusaurus serves/builds from `docs/`.
+1. Source documentation repositories are tracked as git submodules under `docs_external/`.
+2. `scripts/sync-doc-submodules.mjs` syncs those repos from:
+   - repos in the configured org with topic `documentation` (when `GH_TOKEN` is available)
+   - manual repo entries in `submodules.docs.json`
+3. `scripts/patch-external-docs.mjs` transforms upstream markdown/MDX and copies results to `docs/`.
+4. Docusaurus builds and serves from `docs/`.
+5. Derived metadata files are regenerated during patch/sync.
 
-Key config files:
+### Sync Behavior
 
-- `submodules.docs.json` - org/topic/path/branch rules for sync
-- `.gitmodules` - tracked submodule entries
-- `docusaurus.config.ts` - site/nav/theme config
-- `src/data/repo-catalog.json` - generated catalog metadata (topics, source, branch, route)
-- `src/data/weekly-highlights.json` - generated weekly highlights data
-- `src/data/weekly-highlights-state.json` - persisted state for detecting newly added/updated repos
-- `sidebars.ts` - generated per-repo sidebars for docs navigation
+- Sync fetches branch SHA first and skips submodule update when unchanged.
+- Patch tracks last processed repo SHA in `src/data/patch-processed-state.json` and repatches only changed repos.
+- Removed source repos are removed from generated `docs/` output.
+
+## Key Files
+
+- `submodules.docs.json`: sync rules (org/topic/path/default branch/manual repos)
+- `.gitmodules`: git submodule registry
+- `docusaurus.config.ts`: Docusaurus site config
+- `sidebars.ts`: generated per-repo sidebars
+- `src/data/repo-catalog.json`: generated catalog metadata
+- `src/data/weekly-highlights.json`: generated highlight data
+- `src/data/patch-processed-state.json`: persisted minimal state (repo SHA + first seen timestamp)
+- `sync-summary.json`: generated sync run summary (workflow artifact)
 
 ## Prerequisites
 
@@ -48,13 +58,13 @@ npm run build
 
 ## Sync Submodules Locally
 
-To run org/topic auto-sync (requires GitHub API token):
+Run org/topic discovery + manual sync:
 
 ```bash
 GH_TOKEN=<your_github_token> node scripts/sync-doc-submodules.mjs
 ```
 
-To sync manual repos only (no GitHub token):
+Run manual repos only:
 
 ```bash
 node scripts/sync-doc-submodules.mjs
@@ -66,12 +76,10 @@ To sync and patch in one command:
 npm run sync:docs
 ```
 
-Then check what changed:
+Inspect changes:
 
 ```bash
 git status
-cat .gitmodules
-ls docs_external
 ```
 
 ## GitHub Actions (Single Workflow)
@@ -88,21 +96,16 @@ Triggers:
 Pipeline in one workflow:
 
 1. PR check path: patch + build validation only
-1. Sync submodules from org topic + manual repos
-2. Commit and push submodule changes (if any)
-3. Build Docusaurus site
-4. Deploy to GitHub Pages
+2. Sync submodules from org topic + manual repos
+3. Commit and push submodule changes (if any)
+4. Build Docusaurus site
+5. Deploy to GitHub Pages
 
 ## Notes
 
-- External repo inclusion rules are controlled by `submodules.docs.json`.
-- Repos discovered by org topic are auto-removed when they no longer match the configured topic (`autoRemove: true`).
+- External repo inclusion is controlled by `submodules.docs.json`.
 - `manualRepos` are always included and never auto-removed.
-- Org topic discovery and GitHub topic fetching require `GH_TOKEN`.
-- Without `GH_TOKEN`, sync runs in manual-only mode (no org/topic discovery).
-- Repo topics are pulled from GitHub during submodule sync when token is available and written to `src/data/repo-catalog.json`.
-- For `manualRepos`, you can override topics with `topic` (string) or `topics` (string array).
-- Docs patching is idempotent and reruns on every start/build, and also regenerates `weekly-highlights` data and `sidebars.ts`.
-- `docs/` is generated from `docs_external/` by patching; keep only `docs/index.md` as source-of-truth in git.
-- Patch script supports an internal quarantine list for known-bad upstream docs to avoid breaking builds.
-- Sync workflow emits `sync-summary.json` and uploads it as a workflow artifact for monitoring.
+- Org topic discovery requires `GH_TOKEN`; without it, sync runs manual-only mode.
+- For manual repos, set topic labels with `topic` or `topics`.
+- Patch includes a quarantine list for known problematic upstream files.
+- `docs/` is generated output from `docs_external/`.

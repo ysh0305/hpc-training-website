@@ -7,6 +7,7 @@ import {
   GITMODULES_PATH,
   LAST_SYNCED,
   OUT_ROOT,
+  PATCH_STATE_PATH,
   PAGES_ROOT,
   QUARANTINED_SOURCE_FILES,
   REPO_CATALOG_PATH,
@@ -14,7 +15,6 @@ import {
   SRC,
   SUBMODULES_DOCS_PATH,
   WEEKLY_HIGHLIGHTS_PATH,
-  WEEKLY_STATE_PATH,
 } from "./constants.mjs";
 import { ensureDir, normalizeRepoUrl, parseGitHubOwnerRepo, removePathSafe, sh } from "./helpers.mjs";
 import {
@@ -131,6 +131,67 @@ function injectSourceBanner(text, sourcePath) {
   return `${banner}${text}`;
 }
 
+function loadPatchState() {
+  if (!fs.existsSync(PATCH_STATE_PATH)) return { generatedAt: "", repos: {} };
+  try {
+    const raw = fs.readFileSync(PATCH_STATE_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return { generatedAt: "", repos: {} };
+    const repos = {};
+    for (const [repoName, value] of Object.entries(parsed.repos || {})) {
+      if (typeof value === "string") {
+        repos[repoName] = { sha: value, firstSeenAt: "" };
+        continue;
+      }
+      const sha = String(value?.sha || value?.lastSeenCommit || "").trim();
+      repos[repoName] = {
+        sha,
+        firstSeenAt: String(value?.firstSeenAt || "").trim(),
+      };
+    }
+    return {
+      generatedAt: String(parsed.generatedAt || "").trim(),
+      repos,
+    };
+  } catch {
+    return { generatedAt: "", repos: {} };
+  }
+}
+
+function writePatchState(previousPatchState, sourceRepos, sourceShasByRepo) {
+  const nowIso = new Date().toISOString();
+  const next = { generatedAt: nowIso, repos: {} };
+  const prevRepos = previousPatchState?.repos || {};
+  for (const repoName of sourceRepos) {
+    const prev = prevRepos[repoName];
+    const prevFirstSeenAt = String(prev?.firstSeenAt || "").trim();
+    next.repos[repoName] = {
+      sha: sourceShasByRepo[repoName] || "",
+      firstSeenAt: prevFirstSeenAt || nowIso,
+    };
+  }
+  fs.writeFileSync(PATCH_STATE_PATH, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+  return next;
+}
+
+function listSourceRepos() {
+  return fs
+    .readdirSync(SRC, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function getRepoHeadSha(repoName) {
+  const repoDir = path.join(SRC, repoName);
+  if (!fs.existsSync(repoDir)) return "";
+  try {
+    return sh("git rev-parse HEAD", repoDir);
+  } catch {
+    return "";
+  }
+}
+
 // Fail fast if submodule folder is missing/empty
 if (!fs.existsSync(SRC) || fs.readdirSync(SRC).length === 0) {
   console.error(
@@ -157,14 +218,39 @@ const patchMdxDeps = {
   toSidebarId,
 };
 
+const previousPatchState = loadPatchState();
+const sourceRepos = listSourceRepos();
+const sourceShasByRepo = Object.fromEntries(sourceRepos.map((repo) => [repo, getRepoHeadSha(repo)]));
+const previousRepos = previousPatchState?.repos ?? {};
+
+const changedRepos = sourceRepos.filter((repo) => {
+  const currentSha = sourceShasByRepo[repo] || "";
+  const previousSha = previousRepos[repo]?.sha || "";
+  if (!currentSha) return true;
+  if (!previousSha) return true;
+  if (currentSha !== previousSha) return true;
+  if (!fs.existsSync(path.join(OUT_ROOT, repo))) return true;
+  return false;
+});
+
+const removedRepos = Object.keys(previousRepos).filter((repo) => !sourceRepos.includes(repo));
+for (const repo of removedRepos) {
+  removePathSafe(path.join(OUT_ROOT, repo));
+}
+
 syncSourceToOutput(SRC, OUT_ROOT, {
   ensureDir,
   removePathSafe,
+  onlyRepos: new Set(changedRepos),
   patchMdx,
   patchMdxDeps,
   isQuarantinedSourceFile,
   writeQuarantinePlaceholder,
 });
+const nextPatchState = writePatchState(previousPatchState, sourceRepos, sourceShasByRepo);
+console.log(
+  `Patch scope: ${changedRepos.length} changed/new repo(s), ${removedRepos.length} removed repo(s), ${sourceRepos.length} total tracked.`
+);
 
 generateWeeklyHighlightsData({
   SUBMODULE_META,
@@ -172,7 +258,8 @@ generateWeeklyHighlightsData({
   OUT_ROOT,
   SRC,
   WEEKLY_HIGHLIGHTS_PATH,
-  WEEKLY_STATE_PATH,
+  previousPatchState,
+  nextPatchState,
   ensureDir,
   normalizeRepoUrl,
   sh,

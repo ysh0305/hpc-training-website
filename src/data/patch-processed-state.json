@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-04-08T05:48:37.056Z",
+  "repos": {
+    "basic_skills": {
+      "sha": "622625c6a4dc2fd0ac5205f9cc8310fef4de9c21",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "ciml-summer-institute-2021": {
+      "sha": "c11392b1eeae0df7f280e017c9eabfc9a793e5c5",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "ciml-summer-institute-2022": {
+      "sha": "9f6a8d5cbbd9d492c0751444c0510e2cce998060",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "ciml-summer-institute-2023": {
+      "sha": "2d76685984f850c6dc37b0589b5135777d6eeee6",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "ciml-summer-institute-2024": {
+      "sha": "0248c2f61ce5413f439ab108f8e0977408927d44",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "ciml-summer-institute-2025": {
+      "sha": "b5070ff4ded8e927dbee4578d59009782d188e4b",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "expanse-101": {
+      "sha": "97c19211a277a039ba2226503507ac4a5438bbee",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "galyleo": {
+      "sha": "1f563a1c5a91fbbab56f556e86e506e770dd8d3e",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "hpc-security": {
+      "sha": "01df443355b3800538719966f25b9a1474cf806d",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "sdsc-summer-institute-2021": {
+      "sha": "c684d3db9355d54f6e9065d8d597793d8e495866",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "sdsc-summer-institute-2022": {
+      "sha": "6bb265ff24147e32732e21aabdb2ffb6ee89c080",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "sdsc-summer-institute-2023": {
+      "sha": "40c183bec42f576b9c2ab176600714d25b2514c8",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "sdsc-summer-institute-2024": {
+      "sha": "9c86b82473e068126a70da216ac2d4f4c6823e58",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "sdsc-summer-institute-2025": {
+      "sha": "bd2118f66b8409e55d15f2890acb058463c8568f",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    },
+    "tscc-101": {
+      "sha": "28edbbb17da00070e8e0e71f56d85f64dcfce3bc",
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
+    }
+  }
+}

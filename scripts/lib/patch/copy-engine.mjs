@@ -59,8 +59,13 @@ function copyNode(srcPath, outPath, deps) {
 }
 
 export function syncSourceToOutput(srcRoot, outRoot, deps) {
-  const { removePathSafe } = deps;
+  const { removePathSafe, onlyRepos } = deps;
+  const onlySet = onlyRepos instanceof Set ? onlyRepos : null;
+
   for (const entry of fs.readdirSync(srcRoot, { withFileTypes: true })) {
+    if (onlySet && entry.isDirectory() && !onlySet.has(entry.name)) {
+      continue;
+    }
     const srcPath = path.join(srcRoot, entry.name);
     const outPath = path.join(outRoot, entry.name);
     removePathSafe(outPath);

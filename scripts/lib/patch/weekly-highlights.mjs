@@ -8,7 +8,8 @@ export function generateWeeklyHighlightsData(deps) {
     OUT_ROOT,
     SRC,
     WEEKLY_HIGHLIGHTS_PATH,
-    WEEKLY_STATE_PATH,
+    previousPatchState,
+    nextPatchState,
     ensureDir,
     normalizeRepoUrl,
     sh,
@@ -69,17 +70,6 @@ export function generateWeeklyHighlightsData(deps) {
     return `/${noExt}`.replace(/\/{2,}/g, "/");
   }
 
-  function loadWeeklyState() {
-    if (!fs.existsSync(WEEKLY_STATE_PATH)) return { repos: {} };
-    try {
-      const raw = fs.readFileSync(WEEKLY_STATE_PATH, "utf8");
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === "object" ? parsed : { repos: {} };
-    } catch {
-      return { repos: {} };
-    }
-  }
-
   function getLatestCommitMeta(repoName) {
     const repoDir = path.join(SRC, repoName);
     if (!fs.existsSync(repoDir)) {
@@ -102,8 +92,10 @@ export function generateWeeklyHighlightsData(deps) {
   }
 
   const nowIso = new Date().toISOString();
-  const previousState = loadWeeklyState();
-  const nextState = { repos: {} };
+  const nowTs = Date.now();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const previousState = previousPatchState?.repos || {};
+  const currentState = nextPatchState?.repos || {};
   const repos = [];
 
   for (const meta of entries) {
@@ -112,16 +104,13 @@ export function generateWeeklyHighlightsData(deps) {
     const branch = meta.branch || "main";
     const tutorialLink = getTutorialRoute(repoName);
     const commit = getLatestCommitMeta(repoName);
-    const prev = previousState?.repos?.[repoName];
-    const isNewlyAdded = !prev;
-    const isUpdated = Boolean(prev && prev.lastSeenCommit && prev.lastSeenCommit !== commit.hash);
-    const firstSeenAt = prev?.firstSeenAt || nowIso;
-
-    nextState.repos[repoName] = {
-      firstSeenAt,
-      lastSeenCommit: commit.hash,
-      lastSeenAt: nowIso,
-    };
+    const prev = previousState?.[repoName];
+    const prevSha = String(prev?.sha || "").trim();
+    const isNewlyAdded = !prevSha;
+    const latestCommitTs = Date.parse(commit.committedAt || "");
+    const isRecentlyUpdated = Number.isFinite(latestCommitTs) && latestCommitTs >= nowTs - weekMs;
+    const isUpdated = Boolean(!isNewlyAdded && isRecentlyUpdated);
+    const firstSeenAt = String(currentState?.[repoName]?.firstSeenAt || prev?.firstSeenAt || nowIso);
 
     repos.push({
       id: repoName,
@@ -142,11 +131,10 @@ export function generateWeeklyHighlightsData(deps) {
   }
 
   repos.sort((a, b) => {
-    if (a.isNewlyAdded !== b.isNewlyAdded) return a.isNewlyAdded ? -1 : 1;
-    if (a.isUpdated !== b.isUpdated) return a.isUpdated ? -1 : 1;
     const ad = Date.parse(a.latestCommitAt || 0);
     const bd = Date.parse(b.latestCommitAt || 0);
-    return bd - ad;
+    if (bd !== ad) return bd - ad;
+    return String(a.name || "").localeCompare(String(b.name || ""));
   });
 
   const payload = {
@@ -160,5 +148,4 @@ export function generateWeeklyHighlightsData(deps) {
   };
 
   fs.writeFileSync(WEEKLY_HIGHLIGHTS_PATH, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
-  fs.writeFileSync(WEEKLY_STATE_PATH, `${JSON.stringify(nextState, null, 2)}\n`, "utf8");
 }

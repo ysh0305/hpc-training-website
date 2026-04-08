@@ -1,17 +1,23 @@
 # Scripts Library
 
-The goals of this layout are:
+This directory contains modular implementation code for:
 
-- Keep each file focused on one job.
-- Make behavior easier to debug and update.
+- `scripts/patch-external-docs.mjs`
+- `scripts/sync-doc-submodules.mjs`
+
+## Design Goals
+
+- Keep each module focused on one responsibility.
+- Keep `pipeline.mjs` files orchestration-only.
+- Make behavior easy to change without touching unrelated logic.
 
 ## Structure
 
-- `patch/`: modules used by the external-doc patch/build pipeline
-- `sync/`: modules used by the submodule discovery/sync pipeline
+- `patch/`: modules for external docs patch/copy pipeline
+- `sync/`: modules for submodule sync/discovery pipeline
 
-## How to Use
+## Editing Guide
 
-- If you need to change high-level flow, edit the `pipeline.mjs` in that folder.
-- If you need to change specific behavior, edit the module responsible for that behavior (for example link rewrites, GitHub API fetches, or catalog writing).
-- Keep entrypoints stable; most implementation changes should happen under `scripts/lib/*`.
+- Change workflow/order in folder-level `pipeline.mjs`.
+- Change behavior in the module responsible for that concern.
+- Keep top-level entrypoints stable and place implementation updates here.

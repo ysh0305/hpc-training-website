@@ -60,6 +60,23 @@ function submoduleUpdateRemote(dest) {
   shInherit(`git submodule update --remote --recursive -- ${dest}`);
 }
 
+function getSubmoduleHeadSha(dest) {
+  try {
+    return sh(`git -C ${dest} rev-parse HEAD`);
+  } catch {
+    return "";
+  }
+}
+
+function fetchLatestBranchSha(dest, branch) {
+  try {
+    shInherit(`git -C ${dest} fetch --quiet origin ${branch}`);
+    return sh(`git -C ${dest} rev-parse FETCH_HEAD`);
+  } catch {
+    return "";
+  }
+}
+
 export function addOrUpdateSubmodule({ name, url, default_branch }, cfg, kindLabel, summary) {
   const dest = path.join(cfg.pathPrefix, name);
   const branch = pickBranch(name, default_branch, cfg);
@@ -98,11 +115,24 @@ export function addOrUpdateSubmodule({ name, url, default_branch }, cfg, kindLab
     setGitmodulesBranch(dest, branch);
     submoduleEnsureInit(dest);
 
-    console.log(`↑ [${kindLabel}] Updating ${name} to latest on "${branch}"`);
-    submoduleUpdateRemote(dest);
+    const localShaBefore = getSubmoduleHeadSha(dest);
+    const latestRemoteSha = fetchLatestBranchSha(dest, branch);
+    const needsUpdate = added || !localShaBefore || !latestRemoteSha || localShaBefore !== latestRemoteSha;
 
-    if (added) summary.added.push(details);
-    else summary.updated.push(details);
+    if (needsUpdate) {
+      console.log(`↑ [${kindLabel}] Updating ${name} to latest on "${branch}"`);
+      submoduleUpdateRemote(dest);
+    } else {
+      console.log(`= [${kindLabel}] ${name} already up to date on "${branch}" (${latestRemoteSha.slice(0, 7)})`);
+    }
+
+    if (added) {
+      summary.added.push({ ...details, sha: latestRemoteSha || getSubmoduleHeadSha(dest) });
+    } else if (needsUpdate) {
+      summary.updated.push({ ...details, sha: latestRemoteSha || getSubmoduleHeadSha(dest) });
+    } else {
+      summary.skipped.push({ ...details, reason: "unchanged", sha: latestRemoteSha || localShaBefore });
+    }
     return true;
   } catch (err) {
     const error = err?.message || String(err);

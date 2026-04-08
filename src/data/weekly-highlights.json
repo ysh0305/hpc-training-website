@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-07T20:32:30.181Z",
+  "generatedAt": "2026-04-08T05:48:38.354Z",
   "summary": {
     "total": 15,
     "newlyAdded": 0,
@@ -20,7 +20,7 @@
       "latestCommitSubject": "modify to better fit docusaurus",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-03-27T17:08:19.178Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "basic_skills",
@@ -36,7 +36,7 @@
       "latestCommitSubject": "modify for better formatting",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-03-27T17:08:19.178Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "tscc-101",
@@ -52,7 +52,7 @@
       "latestCommitSubject": "update video link",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-03-27T17:08:19.178Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "galyleo",
@@ -68,7 +68,7 @@
       "latestCommitSubject": "Add note on git clone for environment setup",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-03-27T17:08:19.178Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "sdsc-summer-institute-2025",
@@ -84,7 +84,7 @@
       "latestCommitSubject": "Add files via upload",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-03-27T17:45:20.635Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "ciml-summer-institute-2025",
@@ -100,7 +100,7 @@
       "latestCommitSubject": "Update README.md",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-04-01T18:13:49.983Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "sdsc-summer-institute-2024",
@@ -116,7 +116,7 @@
       "latestCommitSubject": "update numpy version",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-03-27T18:15:17.212Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "sdsc-summer-institute-2021",
@@ -132,7 +132,7 @@
       "latestCommitSubject": "Add files via upload",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-03-27T18:15:17.212Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "ciml-summer-institute-2024",
@@ -148,7 +148,7 @@
       "latestCommitSubject": "Update README.md",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-04-01T18:13:49.983Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "hpc-security",
@@ -164,7 +164,7 @@
       "latestCommitSubject": "Update README.md",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-03-27T17:08:19.178Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "ciml-summer-institute-2023",
@@ -180,7 +180,7 @@
       "latestCommitSubject": "update welcome file",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-04-01T18:13:49.983Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "sdsc-summer-institute-2023",
@@ -196,7 +196,7 @@
       "latestCommitSubject": "add skimage and ipywidget to singularity image",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-03-27T18:15:17.212Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "sdsc-summer-institute-2022",
@@ -212,7 +212,7 @@
       "latestCommitSubject": "Update run-pi-workflow.sh",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-03-27T18:15:17.212Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "ciml-summer-institute-2022",
@@ -228,7 +228,7 @@
       "latestCommitSubject": "Merge pull request #6 from Justinian074/patch-1",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-04-01T18:13:49.983Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     },
     {
       "id": "ciml-summer-institute-2021",
@@ -244,7 +244,7 @@
       "latestCommitSubject": "Update README.md",
       "isNewlyAdded": false,
       "isUpdated": false,
-      "firstSeenAt": "2026-04-01T18:13:49.983Z"
+      "firstSeenAt": "2026-04-08T05:46:48.692Z"
     }
   ]
 }

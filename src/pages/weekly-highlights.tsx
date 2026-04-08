@@ -31,12 +31,6 @@ type WeeklyHighlightsPayload = {
 const payload = highlightsData as WeeklyHighlightsPayload;
 const repos: WeeklyRepo[] = Array.isArray(payload.repos) ? payload.repos : [];
 
-function extractYear(value: string) {
-  const m = value.match(/(?:19|20)\d{2}/g);
-  if (!m || m.length === 0) return null;
-  return Number(m[m.length - 1]);
-}
-
 function toDisplayLabel(value: string) {
   return value
     .replace(/[_-]+/g, " ")
@@ -50,9 +44,11 @@ function toDisplayLabel(value: string) {
 
 export default function WeeklyHighlightsPage() {
   const sortedRepos = [...repos].sort((a, b) => {
-    const ay = extractYear(a.name) ?? -1;
-    const by = extractYear(b.name) ?? -1;
-    if (ay !== by) return by - ay;
+    const ad = Date.parse(a.latestCommitAt || "");
+    const bd = Date.parse(b.latestCommitAt || "");
+    const safeAd = Number.isFinite(ad) ? ad : -1;
+    const safeBd = Number.isFinite(bd) ? bd : -1;
+    if (safeBd !== safeAd) return safeBd - safeAd;
     return a.name.localeCompare(b.name);
   });
 
@@ -75,7 +71,7 @@ export default function WeeklyHighlightsPage() {
         <section className="weekly-hero">
           <p className="weekly-eyebrow">Weekly Snapshot</p>
           <h1>Weekly Documentation Highlights</h1>
-          <p className="weekly-subtitle">Based on newly added repos and latest repo commit updates.</p>
+          <p className="weekly-subtitle">Based on latest repository commits (updated within the last 7 days).</p>
           <div className="weekly-stats">
             <div className="weekly-stat">
               <span className="weekly-stat-label">Total Repos</span>
