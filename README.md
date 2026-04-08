@@ -25,6 +25,7 @@ This repository hosts the SDSC HPC training docs site built with [Docusaurus](ht
 - `docusaurus.config.ts`: Docusaurus site config
 - `sidebars.ts`: generated per-repo sidebars
 - `src/data/repo-catalog.json`: generated catalog metadata
+- `src/data/events.json`: interactive video catalog source data
 - `src/data/weekly-highlights.json`: generated highlight data
 - `src/data/patch-processed-state.json`: persisted minimal state (repo SHA + first seen timestamp)
 - `sync-summary.json`: generated sync run summary (workflow artifact)
@@ -109,3 +110,6 @@ Pipeline in one workflow:
 - For manual repos, set topic labels with `topic` or `topics`.
 - Patch includes a quarantine list for known problematic upstream files.
 - `docs/` is generated output from `docs_external/`.
+- Catalog page combines repo docs cards and interactive video cards from `src/data/events.json`.
+- Interactive cards always include the `interactive video` topic and can include resource buttons (for example `GitHub`, `Slides`) when present in event data.
+- Catalog pagination is client-side with 24 items per page.
