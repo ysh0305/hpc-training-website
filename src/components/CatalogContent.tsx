@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import Link from "@docusaurus/Link";
 import catalogData from "../data/repo-catalog.json";
+import highlightsData from "../data/weekly-highlights.json";
 
 type RepoCatalogEntry = {
   id: string;
@@ -20,8 +21,19 @@ type RepoCatalogPayload = {
   repos?: RepoCatalogEntry[];
 };
 
+type WeeklyRepoEntry = {
+  name: string;
+  latestCommitAt?: string;
+};
+
+type WeeklyHighlightsPayload = {
+  repos?: WeeklyRepoEntry[];
+};
+
 const payload = catalogData as RepoCatalogPayload;
 const repos: RepoCatalogEntry[] = Array.isArray(payload.repos) ? payload.repos : [];
+const weeklyPayload = highlightsData as WeeklyHighlightsPayload;
+const weeklyRepos: WeeklyRepoEntry[] = Array.isArray(weeklyPayload.repos) ? weeklyPayload.repos : [];
 
 function toDisplayLabel(value: string) {
   return value
@@ -42,6 +54,10 @@ export default function CatalogContent() {
   const [selectedTopic, setSelectedTopic] = useState("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "alphabet">("date");
+  const latestCommitAtByRepo = useMemo(
+    () => new Map(weeklyRepos.map((r) => [r.name, r.latestCommitAt || ""])),
+    []
+  );
 
   const topicOptions = useMemo(() => {
     const set = new Set<string>();
@@ -55,12 +71,6 @@ export default function CatalogContent() {
   }, []);
 
   const filteredRepos = useMemo(() => {
-    function extractYear(value: string) {
-      const m = value.match(/(?:19|20)\d{2}/g);
-      if (!m || m.length === 0) return null;
-      return Number(m[m.length - 1]);
-    }
-
     const q = search.trim().toLowerCase();
     const result = repos.filter((repo) => {
       const repoTopics = (repo.topics || []).map(normalizeTopic);
@@ -78,15 +88,16 @@ export default function CatalogContent() {
       if (sortBy === "alphabet") {
         return a.name.localeCompare(b.name);
       }
-
-      const ay = extractYear(a.name) ?? -1;
-      const by = extractYear(b.name) ?? -1;
-      if (ay !== by) return by - ay;
+      const ad = Date.parse(latestCommitAtByRepo.get(a.name) || "");
+      const bd = Date.parse(latestCommitAtByRepo.get(b.name) || "");
+      const safeAd = Number.isFinite(ad) ? ad : -1;
+      const safeBd = Number.isFinite(bd) ? bd : -1;
+      if (safeBd !== safeAd) return safeBd - safeAd;
       return a.name.localeCompare(b.name);
     });
 
     return result;
-  }, [search, selectedTopic, sortBy]);
+  }, [search, selectedTopic, sortBy, latestCommitAtByRepo]);
 
   return (
     <>
