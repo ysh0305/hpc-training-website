@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-08T06:54:53.617Z",
+  "generatedAt": "2026-04-08T07:12:21.573Z",
   "repos": [
     {
       "id": "basic_skills",
@@ -24,8 +24,8 @@
       "branch": "main",
       "source": "manual",
       "topics": [
-        "documentation",
         "ciml",
+        "documentation",
         "summer-institute"
       ],
       "route": "/ciml-summer-institute-2021/",
@@ -40,8 +40,8 @@
       "branch": "main",
       "source": "manual",
       "topics": [
-        "documentation",
         "ciml",
+        "documentation",
         "summer-institute"
       ],
       "route": "/ciml-summer-institute-2022/",
@@ -56,8 +56,8 @@
       "branch": "main",
       "source": "manual",
       "topics": [
-        "documentation",
         "ciml",
+        "documentation",
         "summer-institute"
       ],
       "route": "/ciml-summer-institute-2023/",
@@ -72,8 +72,8 @@
       "branch": "main",
       "source": "manual",
       "topics": [
-        "documentation",
         "ciml",
+        "documentation",
         "summer-institute"
       ],
       "route": "/ciml-summer-institute-2024/",
@@ -88,8 +88,8 @@
       "branch": "main",
       "source": "manual",
       "topics": [
-        "documentation",
         "ciml",
+        "documentation",
         "summer-institute"
       ],
       "route": "/ciml-summer-institute-2025/",
@@ -104,12 +104,12 @@
       "branch": "main",
       "source": "manual",
       "topics": [
-        "documentation",
         "ciml",
+        "documentation",
         "summer-institute"
       ],
-      "route": null,
-      "hasDocs": false
+      "route": "/ciml-summer-institute-2026/",
+      "hasDocs": true
     },
     {
       "id": "expanse-101",
@@ -241,8 +241,8 @@
         "documentation",
         "summer-institute"
       ],
-      "route": null,
-      "hasDocs": false
+      "route": "/sdsc-summer-institute-2026/",
+      "hasDocs": true
     },
     {
       "id": "tscc-101",

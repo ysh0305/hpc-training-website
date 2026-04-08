@@ -58,3 +58,11 @@
 	path = docs_external/ciml-summer-institute-2025
 	url = https://github.com/ciml-org/ciml-summer-institute-2025.git
 	branch = main
+[submodule "docs_external/sdsc-summer-institute-2026"]
+	path = docs_external/sdsc-summer-institute-2026
+	url = https://github.com/sdsc/sdsc-summer-institute-2026.git
+	branch = main
+[submodule "docs_external/ciml-summer-institute-2026"]
+	path = docs_external/ciml-summer-institute-2026
+	url = https://github.com/ciml-org/ciml-summer-institute-2026.git
+	branch = main
