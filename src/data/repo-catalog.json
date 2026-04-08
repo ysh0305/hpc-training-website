@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-08T06:19:14.605Z",
+  "generatedAt": "2026-04-08T06:54:53.617Z",
   "repos": [
     {
       "id": "basic_skills",
@@ -24,6 +24,7 @@
       "branch": "main",
       "source": "manual",
       "topics": [
+        "documentation",
         "ciml",
         "summer-institute"
       ],
@@ -39,6 +40,7 @@
       "branch": "main",
       "source": "manual",
       "topics": [
+        "documentation",
         "ciml",
         "summer-institute"
       ],
@@ -54,6 +56,7 @@
       "branch": "main",
       "source": "manual",
       "topics": [
+        "documentation",
         "ciml",
         "summer-institute"
       ],
@@ -69,6 +72,7 @@
       "branch": "main",
       "source": "manual",
       "topics": [
+        "documentation",
         "ciml",
         "summer-institute"
       ],
@@ -84,11 +88,28 @@
       "branch": "main",
       "source": "manual",
       "topics": [
+        "documentation",
         "ciml",
         "summer-institute"
       ],
       "route": "/ciml-summer-institute-2025/",
       "hasDocs": true
+    },
+    {
+      "id": "ciml-summer-institute-2026",
+      "name": "ciml-summer-institute-2026",
+      "owner": "ciml-org",
+      "fullName": "ciml-org/ciml-summer-institute-2026",
+      "url": "https://github.com/ciml-org/ciml-summer-institute-2026",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "documentation",
+        "ciml",
+        "summer-institute"
+      ],
+      "route": null,
+      "hasDocs": false
     },
     {
       "id": "expanse-101",
@@ -113,7 +134,9 @@
       "url": "https://github.com/mkandes/galyleo",
       "branch": "master",
       "source": "manual",
-      "topics": [],
+      "topics": [
+        "documentation"
+      ],
       "route": "/galyleo/",
       "hasDocs": true
     },
@@ -140,6 +163,7 @@
       "branch": "main",
       "source": "manual",
       "topics": [
+        "documentation",
         "summer-institute"
       ],
       "route": "/sdsc-summer-institute-2021/",
@@ -154,6 +178,7 @@
       "branch": "main",
       "source": "manual",
       "topics": [
+        "documentation",
         "summer-institute"
       ],
       "route": "/sdsc-summer-institute-2022/",
@@ -168,6 +193,7 @@
       "branch": "main",
       "source": "manual",
       "topics": [
+        "documentation",
         "summer-institute"
       ],
       "route": "/sdsc-summer-institute-2023/",
@@ -182,6 +208,7 @@
       "branch": "main",
       "source": "manual",
       "topics": [
+        "documentation",
         "summer-institute"
       ],
       "route": "/sdsc-summer-institute-2024/",
@@ -196,10 +223,26 @@
       "branch": "main",
       "source": "manual",
       "topics": [
+        "documentation",
         "summer-institute"
       ],
       "route": "/sdsc-summer-institute-2025/",
       "hasDocs": true
+    },
+    {
+      "id": "sdsc-summer-institute-2026",
+      "name": "sdsc-summer-institute-2026",
+      "owner": "sdsc",
+      "fullName": "sdsc/sdsc-summer-institute-2026",
+      "url": "https://github.com/sdsc/sdsc-summer-institute-2026",
+      "branch": "main",
+      "source": "manual",
+      "topics": [
+        "documentation",
+        "summer-institute"
+      ],
+      "route": null,
+      "hasDocs": false
     },
     {
       "id": "tscc-101",
